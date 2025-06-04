@@ -157,6 +157,15 @@ export default function QuizPage() {
     setSelectedQuiz(quiz);
     await fetchQuestions(quiz.id);
     setShowQuizList(false);
+    // Reset states when selecting a new quiz
+    setHasSubmitted(false);
+    setIsSubmitted(false);
+    setStarted(false);
+    setShowRevision(false);
+    setShowLeaderboard(false);
+    setAnswers({});
+    setLocked({});
+    setCurrent(0);
   };
 
   const fetchLeaderboard = async () => {
@@ -211,7 +220,7 @@ export default function QuizPage() {
 
   const handleStart = async () => {
     if (studentName.trim() && admissionNumber.trim()) {
-      // Check if already submitted
+      // Check if already submitted this specific quiz
       await checkAlreadySubmitted();
       if (hasSubmitted) {
         toast({
