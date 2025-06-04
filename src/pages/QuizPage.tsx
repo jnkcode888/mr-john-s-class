@@ -48,6 +48,7 @@ export default function QuizPage() {
   const [showQuizList, setShowQuizList] = useState(true);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingToServer, setIsSavingToServer] = useState(false);
 
   // Auto-save and resume logic
   const QUIZ_KEY = selectedQuiz && admissionNumber ? `quiz-progress-${selectedQuiz.id}-${admissionNumber}` : '';
@@ -293,51 +294,8 @@ export default function QuizPage() {
     }
   };
 
-  const handleResume = () => {
-    if (QUIZ_KEY) {
-      const saved = localStorage.getItem(QUIZ_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed) {
-            // First set started to true to ensure we're in quiz mode
-            setStarted(true);
-            
-            // Then restore all other state
-            setStudentName(parsed.studentName || '');
-            setAnswers(parsed.answers || {});
-            setLocked(parsed.locked || {});
-            
-            // Force the current question to be set after a small delay
-            // to ensure the quiz is properly initialized
-            setTimeout(() => {
-              setCurrent(parsed.current || 0);
-              if (parsed.lastSaved) {
-                setLastSaved(new Date(parsed.lastSaved));
-              }
-              
-              // Show a toast to confirm resume
-              toast({
-                title: 'Quiz Resumed',
-                description: `Continuing from question ${parsed.current + 1}`,
-                status: 'success',
-                duration: 3000,
-                isClosable: true,
-              });
-            }, 100);
-          }
-        } catch (error) {
-          console.error('Error resuming quiz:', error);
-          toast({
-            title: 'Error Resuming Quiz',
-            description: 'Could not restore your progress. Starting from the beginning.',
-            status: 'error',
-            duration: 5000,
-            isClosable: true,
-          });
-        }
-      }
-    }
+  const handleResume = async () => {
+    await loadProgressFromServer();
   };
 
   const handleSubmit = async () => {
@@ -664,6 +622,118 @@ export default function QuizPage() {
   // Prevent going back to previous questions
   const canGoPrev = false; // always false now
 
+  // Save progress to server
+  const saveProgressToServer = async () => {
+    if (!selectedQuiz || !admissionNumber) return;
+    
+    setIsSavingToServer(true);
+    try {
+      const { error } = await supabase
+        .from('quiz_progress')
+        .upsert({
+          quiz_id: selectedQuiz.id,
+          admission_number: admissionNumber,
+          student_name: studentName,
+          answers: answers,
+          current_question: current,
+          last_saved: new Date().toISOString()
+        }, {
+          onConflict: 'quiz_id,admission_number'
+        });
+
+      if (error) throw error;
+      
+      toast({
+        title: 'Progress Saved',
+        description: 'Your progress has been saved to the server',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Error saving progress:', error);
+      toast({
+        title: 'Error Saving Progress',
+        description: 'Your progress is still saved locally',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsSavingToServer(false);
+    }
+  };
+
+  // Load progress from server
+  const loadProgressFromServer = async () => {
+    if (!selectedQuiz || !admissionNumber) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('quiz_progress')
+        .select('*')
+        .eq('quiz_id', selectedQuiz.id)
+        .eq('admission_number', admissionNumber)
+        .single();
+
+      if (error) throw error;
+      
+      if (data) {
+        setStudentName(data.student_name || '');
+        setAnswers(data.answers || {});
+        setCurrent(data.current_question || 0);
+        setStarted(true);
+        
+        toast({
+          title: 'Progress Loaded',
+          description: `Continuing from question ${data.current_question + 1}`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading progress:', error);
+      // Fall back to localStorage if server load fails
+      const saved = localStorage.getItem(QUIZ_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed) {
+            setStudentName(parsed.studentName || '');
+            setAnswers(parsed.answers || {});
+            setCurrent(parsed.current || 0);
+            setStarted(true);
+          }
+        } catch {}
+      }
+    }
+  };
+
+  // Auto-save to both localStorage and server
+  useEffect(() => {
+    if (QUIZ_KEY && !isSubmitted && !hasSubmitted) {
+      // Save to localStorage
+      setIsSaving(true);
+      const saveData = {
+        studentName,
+        admissionNumber,
+        answers,
+        locked,
+        current,
+        started,
+        lastSaved: new Date().toISOString()
+      };
+      localStorage.setItem(QUIZ_KEY, JSON.stringify(saveData));
+      setLastSaved(new Date());
+      setTimeout(() => setIsSaving(false), 1000);
+
+      // Also save to server
+      saveProgressToServer();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentName, admissionNumber, answers, locked, current, started, QUIZ_KEY]);
+
   return (
     <Container maxW={{ base: '100%', md: 'container.md' }} py={6} px={2}>
       <VStack spacing={6} align="stretch">
@@ -767,11 +837,18 @@ export default function QuizPage() {
           <Text fontSize="sm" color="gray.500">
             {lastSaved ? `Last saved: ${lastSaved.toLocaleTimeString()}` : ''}
           </Text>
-          {isSaving && (
-            <Text fontSize="sm" color="blue.500">
-              Saving...
-            </Text>
-          )}
+          <HStack spacing={2}>
+            {isSaving && (
+              <Text fontSize="sm" color="blue.500">
+                Saving locally...
+              </Text>
+            )}
+            {isSavingToServer && (
+              <Text fontSize="sm" color="green.500">
+                Saving to server...
+              </Text>
+            )}
+          </HStack>
         </HStack>
       </VStack>
     </Container>
