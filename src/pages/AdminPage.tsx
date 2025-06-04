@@ -326,12 +326,22 @@ export default function AdminPage() {
         : 0;
       return { ...sub, score };
     })
-    .filter(sub =>
-      (sub.name.toLowerCase().includes(search.toLowerCase()) ||
-        (sub.admission_number || '').toLowerCase().includes(search.toLowerCase())) &&
-      (minScore === '' || sub.score >= parseInt(minScore)) &&
-      (maxScore === '' || sub.score <= parseInt(maxScore))
-    );
+    .filter(sub => {
+      const searchLower = search.toLowerCase();
+      const nameMatch = sub.name.toLowerCase().includes(searchLower);
+      const admissionMatch = sub.admission_number.toLowerCase().includes(searchLower);
+      const scoreMatch = (!minScore || sub.score >= parseInt(minScore)) && 
+                        (!maxScore || sub.score <= parseInt(maxScore));
+      return (nameMatch || admissionMatch) && scoreMatch;
+    })
+    .sort((a, b) => {
+      // First sort by score (descending)
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      // If scores are equal, sort by submission time (ascending)
+      return new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime();
+    });
 
   return (
     <Container maxW="container.lg" py={10}>
@@ -603,38 +613,36 @@ export default function AdminPage() {
                         <Text fontWeight="bold" ml="auto">Total: {filteredSubmissions.length}</Text>
                       </HStack>
                       <AnimatePresence>
-                        {[...filteredSubmissions]
-                          .sort((a, b) => b.score - a.score || new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime())
-                          .map((sub, idx) => {
-                            const color = sub.score >= 70 ? 'green.100' : sub.score >= 50 ? 'yellow.100' : 'red.100';
-                            return (
-                              <motion.div
-                                key={sub.id}
-                                initial={{ opacity: 0, y: 30 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 30 }}
-                                transition={{ duration: 0.2, delay: idx * 0.03 }}
-                              >
-                                <Card boxShadow="lg" borderRadius="xl" bg={color} mb={2}>
-                                  <CardBody>
-                                    <HStack justify="space-between" align="flex-start" flexWrap="wrap">
-                                      <VStack align="start" spacing={1} flex={1} minW={0}>
-                                        <Text fontWeight="bold" fontSize="lg">{sub.name}</Text>
-                                        <Text fontSize="sm" color="gray.600">Admission: {sub.admission_number}</Text>
-                                        <Text fontSize="sm" color="gray.500">Submitted: {formatDate(sub.submitted_at)}</Text>
-                                        <Badge colorScheme={sub.score >= 70 ? 'green' : sub.score >= 50 ? 'yellow' : 'red'} fontSize="md">
-                                          {sub.score}%
-                                        </Badge>
-                                      </VStack>
-                                      <Text fontWeight="bold" fontSize="2xl" color="blue.600" minW="60px" textAlign="right">
-                                        #{idx + 1}
-                                      </Text>
-                                    </HStack>
-                                  </CardBody>
-                                </Card>
-                              </motion.div>
-                            );
-                          })}
+                        {filteredSubmissions.map((sub, idx) => {
+                          const color = sub.score >= 70 ? 'green.100' : sub.score >= 50 ? 'yellow.100' : 'red.100';
+                          return (
+                            <motion.div
+                              key={sub.id}
+                              initial={{ opacity: 0, y: 30 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 30 }}
+                              transition={{ duration: 0.2, delay: idx * 0.03 }}
+                            >
+                              <Card boxShadow="lg" borderRadius="xl" bg={color} mb={2}>
+                                <CardBody>
+                                  <HStack justify="space-between" align="flex-start" flexWrap="wrap">
+                                    <VStack align="start" spacing={1} flex={1} minW={0}>
+                                      <Text fontWeight="bold" fontSize="lg">{sub.name}</Text>
+                                      <Text fontSize="sm" color="gray.600">Admission: {sub.admission_number}</Text>
+                                      <Text fontSize="sm" color="gray.500">Submitted: {formatDate(sub.submitted_at)}</Text>
+                                      <Badge colorScheme={sub.score >= 70 ? 'green' : sub.score >= 50 ? 'yellow' : 'red'} fontSize="md">
+                                        {sub.score}%
+                                      </Badge>
+                                    </VStack>
+                                    <Text fontWeight="bold" fontSize="2xl" color="blue.600" minW="60px" textAlign="right">
+                                      #{idx + 1}
+                                    </Text>
+                                  </HStack>
+                                </CardBody>
+                              </Card>
+                            </motion.div>
+                          );
+                        })}
                       </AnimatePresence>
                     </VStack>
                   </TabPanel>

@@ -19,6 +19,8 @@ import {
   Progress,
   HStack,
   SimpleGrid,
+  Badge,
+  Divider,
 } from '@chakra-ui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
@@ -340,6 +342,113 @@ export default function QuizPage() {
     setShowLeaderboard(true);
     setShowRevision(false);
   };
+
+  // Revision view
+  if (showRevision && lastSubmission) {
+    const correctAnswers = Object.entries(lastSubmission.answers).filter(
+      ([questionId, answerIndex]) => {
+        const question = questions.find(q => q.id === questionId);
+        return question?.correct_choice === answerIndex;
+      }
+    ).length;
+    const score = questions.length > 0
+      ? Math.round((correctAnswers / questions.length) * 100)
+      : 0;
+
+    return (
+      <Container maxW="container.md" py={10}>
+        <VStack spacing={8} align="stretch">
+          <Card>
+            <CardBody>
+              <VStack spacing={6} align="stretch">
+                <Heading size="lg">Your Quiz Results</Heading>
+                <HStack justify="space-between">
+                  <Text>Name: {lastSubmission.name}</Text>
+                  <Text>Admission: {lastSubmission.admission_number}</Text>
+                  <Badge colorScheme={score >= 70 ? 'green' : score >= 50 ? 'yellow' : 'red'} fontSize="lg">
+                    Score: {score}%
+                  </Badge>
+                </HStack>
+                <Divider />
+                {questions.map((question, index) => {
+                  const studentAnswer = lastSubmission.answers[question.id];
+                  const isCorrect = studentAnswer === question.correct_choice;
+                  return (
+                    <Card key={question.id} variant="outline" bg={isCorrect ? 'green.50' : 'red.50'}>
+                      <CardBody>
+                        <VStack align="stretch" spacing={3}>
+                          <Text fontWeight="bold">Question {index + 1}: {question.question_text}</Text>
+                          <Text>Your Answer: {question.choices[studentAnswer]}</Text>
+                          <Text>Correct Answer: {question.choices[question.correct_choice]}</Text>
+                          <Badge colorScheme={isCorrect ? 'green' : 'red'} alignSelf="start">
+                            {isCorrect ? 'Correct' : 'Incorrect'}
+                          </Badge>
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  );
+                })}
+                <Button onClick={() => setShowRevision(false)}>Back</Button>
+              </VStack>
+            </CardBody>
+          </Card>
+        </VStack>
+      </Container>
+    );
+  }
+
+  // Leaderboard view
+  if (showLeaderboard) {
+    const sortedLeaderboard = [...leaderboard]
+      .map(sub => {
+        const correctAnswers = Object.entries(sub.answers).filter(
+          ([questionId, answerIndex]) => {
+            const question = questions.find(q => q.id === questionId);
+            return question?.correct_choice === answerIndex;
+          }
+        ).length;
+        const score = questions.length > 0
+          ? Math.round((correctAnswers / questions.length) * 100)
+          : 0;
+        return { ...sub, score };
+      })
+      .sort((a, b) => b.score - a.score || new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime());
+
+    return (
+      <Container maxW="container.md" py={10}>
+        <VStack spacing={8} align="stretch">
+          <Card>
+            <CardBody>
+              <VStack spacing={6} align="stretch">
+                <Heading size="lg">Leaderboard</Heading>
+                <SimpleGrid columns={1} spacing={4}>
+                  {sortedLeaderboard.map((sub, index) => (
+                    <Card key={sub.id} variant="outline">
+                      <CardBody>
+                        <HStack justify="space-between" align="center">
+                          <VStack align="start" spacing={1}>
+                            <Text fontWeight="bold">{sub.name}</Text>
+                            <Text fontSize="sm" color="gray.600">Admission: {sub.admission_number}</Text>
+                          </VStack>
+                          <HStack spacing={4}>
+                            <Badge colorScheme={sub.score >= 70 ? 'green' : sub.score >= 50 ? 'yellow' : 'red'} fontSize="md">
+                              {sub.score}%
+                            </Badge>
+                            <Text fontWeight="bold" color="blue.600">#{index + 1}</Text>
+                          </HStack>
+                        </HStack>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </SimpleGrid>
+                <Button onClick={() => setShowLeaderboard(false)}>Back</Button>
+              </VStack>
+            </CardBody>
+          </Card>
+        </VStack>
+      </Container>
+    );
+  }
 
   // Quiz list view
   if (showQuizList) {
