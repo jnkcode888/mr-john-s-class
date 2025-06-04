@@ -136,7 +136,7 @@ export default function AdminPage() {
         .order('submitted_at', { ascending: false });
 
       if (error) throw error;
-      setSubmissions(data);
+      setSubmissions(data || []);
     } catch (error) {
       console.error(error);
       toast({
@@ -313,7 +313,7 @@ export default function AdminPage() {
   };
 
   // Filtered submissions for search and score
-  const filteredSubmissions = submissions
+  const filteredSubmissions = questions.length > 0 ? submissions
     .map(sub => {
       const correctAnswers = Object.entries(sub.answers).filter(
         ([questionId, answerIndex]) => {
@@ -321,9 +321,7 @@ export default function AdminPage() {
           return question?.correct_choice === answerIndex;
         }
       ).length;
-      const score = questions.length > 0
-        ? Math.round((correctAnswers / questions.length) * 100)
-        : 0;
+      const score = Math.round((correctAnswers / questions.length) * 100);
       return { ...sub, score };
     })
     .filter(sub => {
@@ -341,7 +339,7 @@ export default function AdminPage() {
       }
       // If scores are equal, sort by submission time (ascending)
       return new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime();
-    });
+    }) : [];
 
   return (
     <Container maxW="container.lg" py={10}>
