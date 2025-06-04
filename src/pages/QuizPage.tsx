@@ -63,11 +63,12 @@ export default function QuizPage() {
         locked,
         current,
         started,
-        lastSaved: new Date().toISOString()
+        lastSaved: new Date().toISOString(),
+        resumeNow: false // Ensure this is always false for normal saves
       };
       localStorage.setItem(QUIZ_KEY, JSON.stringify(saveData));
       setLastSaved(new Date());
-      setTimeout(() => setIsSaving(false), 1000); // Show saving indicator for 1 second
+      setTimeout(() => setIsSaving(false), 1000);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentName, admissionNumber, answers, locked, current, started, QUIZ_KEY]);
@@ -94,16 +95,40 @@ export default function QuizPage() {
         try {
           const parsed = JSON.parse(saved);
           if (parsed) {
-            setStudentName(parsed.studentName || '');
-            setAnswers(parsed.answers || {});
-            setLocked(parsed.locked || {});
-            setCurrent(parsed.current || 0);
-            setStarted(parsed.started || false);
-            if (parsed.lastSaved) {
-              setLastSaved(new Date(parsed.lastSaved));
+            // Only restore the current position if we're resuming
+            if (parsed.resumeNow) {
+              setStudentName(parsed.studentName || '');
+              setAnswers(parsed.answers || {});
+              setLocked(parsed.locked || {});
+              setCurrent(parsed.current || 0);
+              setStarted(true);
+              if (parsed.lastSaved) {
+                setLastSaved(new Date(parsed.lastSaved));
+              }
+              
+              // Show a toast to confirm resume
+              toast({
+                title: 'Quiz Resumed',
+                description: `Continuing from question ${parsed.current + 1}`,
+                status: 'success',
+                duration: 3000,
+                isClosable: true,
+              });
+              
+              // Remove the resumeNow flag
+              localStorage.setItem(QUIZ_KEY, JSON.stringify({ ...parsed, resumeNow: false }));
             }
           }
-        } catch {}
+        } catch (error) {
+          console.error('Error restoring quiz:', error);
+          toast({
+            title: 'Error Restoring Quiz',
+            description: 'Could not restore your progress. Starting from the beginning.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -266,13 +291,41 @@ export default function QuizPage() {
   };
 
   const handleResume = () => {
-    // Set a flag in localStorage to trigger resume on reload
     if (QUIZ_KEY) {
       const saved = localStorage.getItem(QUIZ_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved);
-        localStorage.setItem(QUIZ_KEY, JSON.stringify({ ...parsed, resumeNow: true }));
-        setStarted(true);
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed) {
+            // Restore all saved state
+            setStudentName(parsed.studentName || '');
+            setAnswers(parsed.answers || {});
+            setLocked(parsed.locked || {});
+            setCurrent(parsed.current || 0);
+            setStarted(true);
+            if (parsed.lastSaved) {
+              setLastSaved(new Date(parsed.lastSaved));
+            }
+            
+            // Show a toast to confirm resume
+            toast({
+              title: 'Quiz Resumed',
+              description: `Continuing from question ${parsed.current + 1}`,
+              status: 'success',
+              duration: 3000,
+              isClosable: true,
+            });
+          }
+        } catch (error) {
+          console.error('Error resuming quiz:', error);
+          toast({
+            title: 'Error Resuming Quiz',
+            description: 'Could not restore your progress. Starting from the beginning.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+        }
       }
     }
   };
