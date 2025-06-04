@@ -72,19 +72,6 @@ export default function QuizPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentName, admissionNumber, answers, locked, current, started, QUIZ_KEY]);
 
-  // Add warning when leaving page
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (started && !isSubmitted && !hasSubmitted) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [started, isSubmitted, hasSubmitted]);
-
   // Restore progress on load
   useEffect(() => {
     if (QUIZ_KEY && !isSubmitted && !hasSubmitted) {
@@ -191,7 +178,23 @@ export default function QuizPage() {
     setSelectedQuiz(quiz);
     await fetchQuestions(quiz.id);
     setShowQuizList(false);
-    // Reset states when selecting a new quiz
+    
+    // Check for saved progress
+    const saved = localStorage.getItem(`quiz-progress-${quiz.id}-${admissionNumber}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed) {
+          setHasSavedProgress(true);
+          // Don't auto-resume, just show the option to resume
+          setStudentName(parsed.studentName || '');
+        }
+      } catch (error) {
+        console.error('Error checking saved progress:', error);
+      }
+    }
+    
+    // Reset other states
     setHasSubmitted(false);
     setIsSubmitted(false);
     setStarted(false);
@@ -632,7 +635,7 @@ export default function QuizPage() {
                   </Button>
                   {hasSavedProgress && (
                     <Button colorScheme="green" variant="outline" size="md" onClick={handleResume}>
-                      Resume Quiz
+                      Resume Previous Attempt
                     </Button>
                   )}
                   <Button variant="ghost" onClick={() => setShowQuizList(true)}>
@@ -641,7 +644,7 @@ export default function QuizPage() {
                 </VStack>
                 {hasSubmitted && (
                   <Text color="red.500" fontWeight="bold" textAlign="center">
-                    You have already done this quiz.
+                    You have already submitted this quiz.
                   </Text>
                 )}
               </VStack>
