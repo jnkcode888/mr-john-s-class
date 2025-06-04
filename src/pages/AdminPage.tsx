@@ -328,8 +328,8 @@ export default function AdminPage() {
     })
     .filter(sub => {
       const searchLower = search.toLowerCase();
-      const nameMatch = sub.name.toLowerCase().includes(searchLower);
-      const admissionMatch = sub.admission_number.toLowerCase().includes(searchLower);
+      const nameMatch = (sub.name || '').toLowerCase().includes(searchLower);
+      const admissionMatch = (sub.admission_number || '').toLowerCase().includes(searchLower);
       const scoreMatch = (!minScore || sub.score >= parseInt(minScore)) && 
                         (!maxScore || sub.score <= parseInt(maxScore));
       return (nameMatch || admissionMatch) && scoreMatch;
