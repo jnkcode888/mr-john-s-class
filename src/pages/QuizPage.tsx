@@ -46,9 +46,44 @@ export default function QuizPage() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [lastSubmission, setLastSubmission] = useState<any>(null);
   const [showQuizList, setShowQuizList] = useState(true);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Auto-save and resume logic
   const QUIZ_KEY = selectedQuiz && admissionNumber ? `quiz-progress-${selectedQuiz.id}-${admissionNumber}` : '';
+
+  // Auto-save on every change
+  useEffect(() => {
+    if (QUIZ_KEY && !isSubmitted && !hasSubmitted) {
+      setIsSaving(true);
+      const saveData = {
+        studentName,
+        admissionNumber,
+        answers,
+        locked,
+        current,
+        started,
+        lastSaved: new Date().toISOString()
+      };
+      localStorage.setItem(QUIZ_KEY, JSON.stringify(saveData));
+      setLastSaved(new Date());
+      setTimeout(() => setIsSaving(false), 1000); // Show saving indicator for 1 second
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentName, admissionNumber, answers, locked, current, started, QUIZ_KEY]);
+
+  // Add warning when leaving page
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (started && !isSubmitted && !hasSubmitted) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [started, isSubmitted, hasSubmitted]);
 
   // Restore progress on load
   useEffect(() => {
@@ -58,46 +93,21 @@ export default function QuizPage() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (parsed && parsed.resumeNow) {
+          if (parsed) {
             setStudentName(parsed.studentName || '');
             setAnswers(parsed.answers || {});
             setLocked(parsed.locked || {});
             setCurrent(parsed.current || 0);
             setStarted(parsed.started || false);
-            // Remove the resumeNow flag
-            localStorage.setItem(QUIZ_KEY, JSON.stringify({ ...parsed, resumeNow: false }));
+            if (parsed.lastSaved) {
+              setLastSaved(new Date(parsed.lastSaved));
+            }
           }
         } catch {}
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [QUIZ_KEY]);
-
-  // Auto-save on every change
-  useEffect(() => {
-    if (QUIZ_KEY && !isSubmitted && !hasSubmitted) {
-      localStorage.setItem(
-        QUIZ_KEY,
-        JSON.stringify({
-          studentName,
-          admissionNumber,
-          answers,
-          locked,
-          current,
-          started,
-        })
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentName, admissionNumber, answers, locked, current, started, QUIZ_KEY]);
-
-  // Clear progress after submit
-  useEffect(() => {
-    if (isSubmitted && QUIZ_KEY) {
-      localStorage.removeItem(QUIZ_KEY);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSubmitted, QUIZ_KEY]);
 
   useEffect(() => {
     fetchQuizzes();
@@ -688,6 +698,16 @@ export default function QuizPage() {
             >
               Submit Quiz
             </Button>
+          )}
+        </HStack>
+        <HStack justify="space-between" w="100%" mt={4}>
+          <Text fontSize="sm" color="gray.500">
+            {lastSaved ? `Last saved: ${lastSaved.toLocaleTimeString()}` : ''}
+          </Text>
+          {isSaving && (
+            <Text fontSize="sm" color="blue.500">
+              Saving...
+            </Text>
           )}
         </HStack>
       </VStack>
