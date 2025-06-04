@@ -63,8 +63,7 @@ export default function QuizPage() {
         locked,
         current,
         started,
-        lastSaved: new Date().toISOString(),
-        resumeNow: false // Ensure this is always false for normal saves
+        lastSaved: new Date().toISOString()
       };
       localStorage.setItem(QUIZ_KEY, JSON.stringify(saveData));
       setLastSaved(new Date());
@@ -201,6 +200,7 @@ export default function QuizPage() {
     setAnswers({});
     setLocked({});
     setCurrent(0);
+    setLastSaved(null);
   };
 
   const fetchLeaderboard = async () => {
@@ -297,24 +297,31 @@ export default function QuizPage() {
         try {
           const parsed = JSON.parse(saved);
           if (parsed) {
-            // Restore all saved state
+            // First set started to true to ensure we're in quiz mode
+            setStarted(true);
+            
+            // Then restore all other state
             setStudentName(parsed.studentName || '');
             setAnswers(parsed.answers || {});
             setLocked(parsed.locked || {});
-            setCurrent(parsed.current || 0);
-            setStarted(true);
-            if (parsed.lastSaved) {
-              setLastSaved(new Date(parsed.lastSaved));
-            }
             
-            // Show a toast to confirm resume
-            toast({
-              title: 'Quiz Resumed',
-              description: `Continuing from question ${parsed.current + 1}`,
-              status: 'success',
-              duration: 3000,
-              isClosable: true,
-            });
+            // Force the current question to be set after a small delay
+            // to ensure the quiz is properly initialized
+            setTimeout(() => {
+              setCurrent(parsed.current || 0);
+              if (parsed.lastSaved) {
+                setLastSaved(new Date(parsed.lastSaved));
+              }
+              
+              // Show a toast to confirm resume
+              toast({
+                title: 'Quiz Resumed',
+                description: `Continuing from question ${parsed.current + 1}`,
+                status: 'success',
+                duration: 3000,
+                isClosable: true,
+              });
+            }, 100);
           }
         } catch (error) {
           console.error('Error resuming quiz:', error);
