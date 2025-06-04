@@ -207,8 +207,22 @@ export default function QuizPage() {
     }));
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (studentName.trim() && admissionNumber.trim()) {
+      // Check if already submitted
+      await checkAlreadySubmitted();
+      if (hasSubmitted) {
+        toast({
+          title: 'Already Submitted',
+          description: 'You have already submitted this quiz. You can review your answers or view the leaderboard.',
+          status: 'warning',
+          duration: 5000,
+          isClosable: true,
+        });
+        setIsSubmitted(true);
+        return;
+      }
+
       if (hasSavedProgress) {
         if (window.confirm('You have a saved quiz in progress. Start over and erase your previous answers?')) {
           // Clear saved progress and start fresh
