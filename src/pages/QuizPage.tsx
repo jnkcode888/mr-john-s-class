@@ -364,6 +364,39 @@ export default function QuizPage() {
     );
   }
 
+  // Post-submission view
+  if (isSubmitted) {
+    return (
+      <Container maxW="container.sm" py={10}>
+        <VStack spacing={8} align="stretch">
+          <Card boxShadow="2xl" borderRadius="2xl" w="100%" maxW="md" mx="auto" p={2} bg="white">
+            <CardBody>
+              <VStack spacing={6} align="stretch">
+                <Heading fontSize={{ base: 'xl', md: '2xl' }} textAlign="center">
+                  Quiz Submitted Successfully!
+                </Heading>
+                <Text textAlign="center" color="gray.600">
+                  Thank you for completing the quiz, {studentName}!
+                </Text>
+                <VStack spacing={4}>
+                  <Button colorScheme="blue" size="lg" onClick={handleShowRevision} w="full">
+                    Review Your Answers
+                  </Button>
+                  <Button colorScheme="green" size="lg" onClick={handleShowLeaderboard} w="full">
+                    View Leaderboard
+                  </Button>
+                  <Button variant="ghost" onClick={() => setShowQuizList(true)} w="full">
+                    Back to Quiz List
+                  </Button>
+                </VStack>
+              </VStack>
+            </CardBody>
+          </Card>
+        </VStack>
+      </Container>
+    );
+  }
+
   // Landing card for name/admission
   if (!started) {
     return (

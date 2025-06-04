@@ -72,6 +72,9 @@ export default function AdminPage() {
     correct_choice: 0,
   });
 
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const { isOpen: isViewAnswersOpen, onOpen: onViewAnswersOpen, onClose: onViewAnswersClose } = useDisclosure();
+
   useEffect(() => {
     fetchQuizzes();
   }, []);
@@ -498,69 +501,15 @@ export default function AdminPage() {
                                           {submission.score}%
                                         </Badge>
                                       </VStack>
-                                      <Box>
-                                        <Modal>
-                                          {({ isOpen, onOpen, onClose }) => (
-                                            <>
-                                              <Button size="sm" onClick={onOpen}>
-                                                View Answers
-                                              </Button>
-                                              <Modal isOpen={isOpen} onClose={onClose} size="xl">
-                                                <ModalOverlay />
-                                                <ModalContent>
-                                                  <ModalHeader>
-                                                    {submission.name}'s Answers
-                                                  </ModalHeader>
-                                                  <ModalCloseButton />
-                                                  <ModalBody>
-                                                    <VStack spacing={4} align="stretch">
-                                                      {questions.map((question) => (
-                                                        <Card key={question.id} variant="outline">
-                                                          <CardBody>
-                                                            <VStack align="stretch" spacing={2}>
-                                                              <Text fontWeight="bold">
-                                                                {question.question_text}
-                                                              </Text>
-                                                              <Text>
-                                                                Student's Answer:{' '}
-                                                                {getAnswerText(
-                                                                  question.id,
-                                                                  submission.answers[question.id],
-                                                                  questions
-                                                                )}
-                                                              </Text>
-                                                              <Text>
-                                                                Correct Answer:{' '}
-                                                                {question.choices[question.correct_choice]}
-                                                              </Text>
-                                                              <Badge
-                                                                colorScheme={
-                                                                  submission.answers[question.id] ===
-                                                                  question.correct_choice
-                                                                    ? 'green'
-                                                                    : 'red'
-                                                                }
-                                                              >
-                                                                {submission.answers[question.id] ===
-                                                                question.correct_choice
-                                                                  ? 'Correct'
-                                                                  : 'Incorrect'}
-                                                              </Badge>
-                                                            </VStack>
-                                                          </CardBody>
-                                                        </Card>
-                                                      ))}
-                                                    </VStack>
-                                                  </ModalBody>
-                                                  <ModalFooter>
-                                                    <Button onClick={onClose}>Close</Button>
-                                                  </ModalFooter>
-                                                </ModalContent>
-                                              </Modal>
-                                            </>
-                                          )}
-                                        </Modal>
-                                      </Box>
+                                      <Button 
+                                        size="sm" 
+                                        onClick={() => {
+                                          setSelectedSubmission(submission);
+                                          onViewAnswersOpen();
+                                        }}
+                                      >
+                                        View Answers
+                                      </Button>
                                     </HStack>
                                   </CardBody>
                                 </Card>
@@ -571,6 +520,60 @@ export default function AdminPage() {
                       )}
                     </VStack>
                   </TabPanel>
+
+                  {/* View Answers Modal */}
+                  <Modal isOpen={isViewAnswersOpen} onClose={onViewAnswersClose} size="xl">
+                    <ModalOverlay />
+                    <ModalContent>
+                      <ModalHeader>
+                        {selectedSubmission?.name}'s Answers
+                      </ModalHeader>
+                      <ModalCloseButton />
+                      <ModalBody>
+                        <VStack spacing={4} align="stretch">
+                          {selectedSubmission && questions.map((question) => (
+                            <Card key={question.id} variant="outline">
+                              <CardBody>
+                                <VStack align="stretch" spacing={2}>
+                                  <Text fontWeight="bold">
+                                    {question.question_text}
+                                  </Text>
+                                  <Text>
+                                    Student's Answer:{' '}
+                                    {getAnswerText(
+                                      question.id,
+                                      selectedSubmission.answers[question.id],
+                                      questions
+                                    )}
+                                  </Text>
+                                  <Text>
+                                    Correct Answer:{' '}
+                                    {question.choices[question.correct_choice]}
+                                  </Text>
+                                  <Badge
+                                    colorScheme={
+                                      selectedSubmission.answers[question.id] ===
+                                      question.correct_choice
+                                        ? 'green'
+                                        : 'red'
+                                    }
+                                  >
+                                    {selectedSubmission.answers[question.id] ===
+                                    question.correct_choice
+                                      ? 'Correct'
+                                      : 'Incorrect'}
+                                  </Badge>
+                                </VStack>
+                              </CardBody>
+                            </Card>
+                          ))}
+                        </VStack>
+                      </ModalBody>
+                      <ModalFooter>
+                        <Button onClick={onViewAnswersClose}>Close</Button>
+                      </ModalFooter>
+                    </ModalContent>
+                  </Modal>
 
                   {/* Leaderboard Panel */}
                   <TabPanel>
