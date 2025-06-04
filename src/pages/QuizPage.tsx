@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -16,12 +16,6 @@ import {
   FormControl,
   FormLabel,
   FormErrorMessage,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
   Progress,
   HStack,
   SimpleGrid,

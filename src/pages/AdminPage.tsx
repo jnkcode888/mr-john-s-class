@@ -1,16 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
+  Box,
   Container,
   VStack,
   Heading,
+  Text,
   Button,
   Input,
   useToast,
   Card,
   CardBody,
-  Text,
-  HStack,
-  IconButton,
+  Stack,
+  FormControl,
+  FormLabel,
+  FormErrorMessage,
+  SimpleGrid,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  useDisclosure,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -18,28 +28,17 @@ import {
   ModalBody,
   ModalCloseButton,
   ModalFooter,
-  FormControl,
-  FormLabel,
-  useDisclosure,
-  Box,
-  Divider,
-  Radio,
-  RadioGroup,
-  Stack,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Badge,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Select,
+  HStack,
+  IconButton,
+  useColorModeValue,
 } from '@chakra-ui/react';
-import { DeleteIcon, EditIcon, AddIcon } from '@chakra-ui/icons';
+import { DeleteIcon } from '@chakra-ui/icons';
 import { supabase } from '../lib/supabase';
 import type { Quiz, Question, Submission } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -406,7 +405,7 @@ export default function AdminPage() {
                       <HStack justify="space-between">
                         <Heading size="md">Questions for {selectedQuiz.title}</Heading>
                         <Button
-                          leftIcon={<AddIcon />}
+                          leftIcon={<DeleteIcon />}
                           colorScheme="blue"
                           onClick={onOpen}
                         >
@@ -678,7 +677,7 @@ export default function AdminPage() {
                       </HStack>
                     ))}
                     <Button
-                      leftIcon={<AddIcon />}
+                      leftIcon={<DeleteIcon />}
                       onClick={addChoice}
                       size="sm"
                       variant="outline"
