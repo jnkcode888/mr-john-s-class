@@ -50,6 +50,7 @@ export default function QuizPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingToServer, setIsSavingToServer] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
+  const [showQuizListContent, setShowQuizListContent] = useState(false);
 
   // Save progress to server
   const saveProgressToServer = async () => {
@@ -647,33 +648,372 @@ export default function QuizPage() {
     return (
       <Container maxW="container.lg" py={10}>
         <VStack spacing={8} align="stretch">
-          <Heading textAlign="center">Available Quizzes</Heading>
-          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-            {quizzes.map((quiz) => (
-              <motion.div
-                key={quiz.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ 
+              duration: 0.8,
+              type: "spring",
+              stiffness: 100,
+              damping: 10
+            }}
+          >
+            <Heading 
+              textAlign="center" 
+              bgGradient="linear(to-r, blue.400, purple.500)"
+              bgClip="text"
+              fontSize={{ base: '3xl', md: '4xl' }}
+              fontWeight="extrabold"
+              mb={4}
+            >
+              Welcome to Quiz Master!
+            </Heading>
+            <Text 
+              textAlign="center" 
+              color="gray.600" 
+              fontSize={{ base: 'md', md: 'lg' }}
+              mb={8}
+            >
+              Test your knowledge and climb the leaderboard
+            </Text>
+          </motion.div>
+
+          {!showQuizListContent ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card 
+                bg="white" 
+                borderRadius="xl" 
+                overflow="hidden"
+                boxShadow="xl"
+                maxW="2xl"
+                mx="auto"
               >
-                <Card
-                  cursor="pointer"
-                  onClick={() => handleQuizSelect(quiz)}
-                  _hover={{ transform: 'scale(1.02)', shadow: 'lg' }}
-                  transition="all 0.2s"
-                >
-                  <CardBody>
-                    <VStack align="start" spacing={2}>
-                      <Heading size="md">{quiz.title}</Heading>
-                      <Text color="gray.500">
-                        Created: {new Date(quiz.created_at).toLocaleDateString()}
+                <CardBody>
+                  <VStack spacing={8} py={8}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <Text 
+                        fontSize={{ base: 'lg', md: 'xl' }} 
+                        color="gray.600" 
+                        textAlign="center"
+                        mb={6}
+                      >
+                        Ready to challenge yourself? Click below to see available quizzes!
                       </Text>
-                    </VStack>
-                  </CardBody>
-                </Card>
-              </motion.div>
-            ))}
-          </SimpleGrid>
+                    </motion.div>
+                    
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button
+                        size="lg"
+                        colorScheme="blue"
+                        bgGradient="linear(to-r, blue.400, purple.500)"
+                        _hover={{
+                          bgGradient: "linear(to-r, blue.500, purple.600)",
+                          transform: "translateY(-2px)",
+                          boxShadow: "lg"
+                        }}
+                        _active={{
+                          transform: "translateY(0px)"
+                        }}
+                        px={8}
+                        py={6}
+                        fontSize="xl"
+                        onClick={() => setShowQuizListContent(true)}
+                      >
+                        View Available Quizzes
+                      </Button>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6} width="100%">
+                        {[
+                          { icon: '🎯', text: 'Test Your Knowledge' },
+                          { icon: '🏆', text: 'Compete with Others' },
+                          { icon: '📈', text: 'Track Your Progress' }
+                        ].map((item, index) => (
+                          <motion.div
+                            key={item.text}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.6 + index * 0.1 }}
+                          >
+                            <VStack spacing={2}>
+                              <Text fontSize="3xl">{item.icon}</Text>
+                              <Text 
+                                fontSize="sm" 
+                                color="gray.600" 
+                                textAlign="center"
+                                fontWeight="medium"
+                              >
+                                {item.text}
+                              </Text>
+                            </VStack>
+                          </motion.div>
+                        ))}
+                      </SimpleGrid>
+                    </motion.div>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <VStack spacing={8}>
+                <HStack justify="space-between" w="100%">
+                  <Heading size="lg" color="gray.700">
+                    Available Quizzes
+                  </Heading>
+                  <Button
+                    variant="ghost"
+                    leftIcon={<span>←</span>}
+                    onClick={() => setShowQuizListContent(false)}
+                  >
+                    Back
+                  </Button>
+                </HStack>
+
+                {/* Top Performers Preview */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    duration: 0.6,
+                    type: "spring",
+                    stiffness: 80
+                  }}
+                >
+                  <Card 
+                    bg="gray.50" 
+                    borderRadius="xl" 
+                    overflow="hidden"
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <CardBody>
+                      <VStack spacing={4}>
+                        <HStack justify="space-between" w="100%">
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.4 }}
+                          >
+                            <Heading size="md" color="gray.700">
+                              Top Performers
+                            </Heading>
+                          </motion.div>
+                          <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.5 }}
+                          >
+                            <Badge colorScheme="purple" fontSize="sm">
+                              Live Rankings
+                            </Badge>
+                          </motion.div>
+                        </HStack>
+                        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4} width="100%">
+                          {leaderboard.slice(0, 3).map((sub, index) => (
+                            <motion.div
+                              key={sub.id}
+                              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              transition={{ 
+                                duration: 0.5,
+                                delay: 0.3 + index * 0.15,
+                                type: "spring",
+                                stiffness: 100
+                              }}
+                              whileHover={{ 
+                                scale: 1.05,
+                                rotateY: 5,
+                                transition: { duration: 0.2 }
+                              }}
+                            >
+                              <Card 
+                                bg={index === 0 ? 'yellow.50' : index === 1 ? 'gray.100' : 'orange.50'}
+                                borderWidth={1}
+                                borderColor={index === 0 ? 'yellow.400' : index === 1 ? 'gray.300' : 'orange.300'}
+                                boxShadow="lg"
+                              >
+                                <CardBody>
+                                  <VStack spacing={2}>
+                                    <motion.div
+                                      initial={{ scale: 0 }}
+                                      animate={{ scale: 1 }}
+                                      transition={{ 
+                                        delay: 0.5 + index * 0.15,
+                                        type: "spring",
+                                        stiffness: 200
+                                      }}
+                                    >
+                                      <Badge 
+                                        colorScheme={index === 0 ? 'yellow' : index === 1 ? 'gray' : 'orange'}
+                                        fontSize="lg"
+                                        p={2}
+                                        borderRadius="full"
+                                      >
+                                        #{index + 1}
+                                      </Badge>
+                                    </motion.div>
+                                    <Text fontWeight="bold">{sub.name}</Text>
+                                    <Text fontSize="sm" color="gray.600">
+                                      Score: {Math.round((Object.entries(sub.answers).filter(
+                                        ([questionId, answerIndex]) => {
+                                          const question = questions.find(q => q.id === questionId);
+                                          return question?.correct_choice === answerIndex;
+                                        }
+                                      ).length / questions.length) * 100)}%
+                                    </Text>
+                                  </VStack>
+                                </CardBody>
+                              </Card>
+                            </motion.div>
+                          ))}
+                        </SimpleGrid>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                </motion.div>
+
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+                  {quizzes.map((quiz, index) => (
+                    <motion.div
+                      key={quiz.id}
+                      initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ 
+                        duration: 0.5,
+                        delay: index * 0.1,
+                        type: "spring",
+                        stiffness: 100
+                      }}
+                      whileHover={{ 
+                        scale: 1.03,
+                        rotateY: 5,
+                        transition: { duration: 0.2 }
+                      }}
+                      whileTap={{ 
+                        scale: 0.98,
+                        rotateY: -5,
+                        transition: { duration: 0.1 }
+                      }}
+                    >
+                      <motion.div
+                        whileHover={{ scale: 1.01 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Card
+                          cursor="pointer"
+                          onClick={() => handleQuizSelect(quiz)}
+                          _hover={{ shadow: 'xl' }}
+                          transition="all 0.3s"
+                          bg="white"
+                          borderRadius="xl"
+                          overflow="hidden"
+                          position="relative"
+                        >
+                          <Box
+                            position="absolute"
+                            top={0}
+                            left={0}
+                            right={0}
+                            h="4px"
+                            bgGradient="linear(to-r, blue.400, purple.500)"
+                          />
+                          <CardBody>
+                            <VStack align="start" spacing={4}>
+                              <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 + index * 0.1 }}
+                              >
+                                <Heading size="md" color="gray.700">
+                                  {quiz.title}
+                                </Heading>
+                              </motion.div>
+                              <HStack spacing={2} color="gray.500">
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.3 + index * 0.1 }}
+                                >
+                                  <Badge colorScheme="blue" variant="subtle">
+                                    {new Date(quiz.created_at).toLocaleDateString()}
+                                  </Badge>
+                                </motion.div>
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.4 + index * 0.1 }}
+                                >
+                                  <Badge colorScheme="green" variant="subtle">
+                                    New
+                                  </Badge>
+                                </motion.div>
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.5 + index * 0.1 }}
+                                >
+                                  <Badge colorScheme="purple" variant="subtle">
+                                    {questions.length} Questions
+                                  </Badge>
+                                </motion.div>
+                              </HStack>
+                              <Text color="gray.600" fontSize="sm">
+                                Challenge yourself with this quiz and test your knowledge!
+                              </Text>
+                              <motion.div
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                style={{ width: '100%' }}
+                              >
+                                <Button
+                                  colorScheme="blue"
+                                  size="sm"
+                                  width="full"
+                                  mt={2}
+                                  _hover={{
+                                    transform: 'translateY(-2px)',
+                                    shadow: 'md'
+                                  }}
+                                  transition="all 0.2s"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleQuizSelect(quiz);
+                                  }}
+                                >
+                                  Start Quiz
+                                </Button>
+                              </motion.div>
+                            </VStack>
+                          </CardBody>
+                        </Card>
+                      </motion.div>
+                    </motion.div>
+                  ))}
+                </SimpleGrid>
+              </VStack>
+            </motion.div>
+          )}
         </VStack>
       </Container>
     );
