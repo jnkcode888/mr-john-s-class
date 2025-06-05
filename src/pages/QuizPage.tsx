@@ -141,21 +141,26 @@ export default function QuizPage() {
   useEffect(() => {
     if (QUIZ_KEY && !isSubmitted && !hasSubmitted && !isResuming) {
       const saved = localStorage.getItem(QUIZ_KEY);
-      setHasSavedProgress(!!saved);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (parsed) {
+          if (parsed && parsed.answers && Object.keys(parsed.answers).length > 0) {
+            setHasSavedProgress(true);
               setStudentName(parsed.studentName || '');
               setAnswers(parsed.answers || {});
               setLocked(parsed.locked || {});
               if (parsed.lastSaved) {
                 setLastSaved(new Date(parsed.lastSaved));
-            }
+              }
+          } else {
+            setHasSavedProgress(false);
           }
         } catch (error) {
           console.error('Error restoring quiz:', error);
+          setHasSavedProgress(false);
         }
+      } else {
+        setHasSavedProgress(false);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -227,13 +232,14 @@ export default function QuizPage() {
     await fetchQuestions(quiz.id);
     setShowQuizList(false);
     
-    // Check for saved progress
+    // Check for saved progress in both localStorage and server
     const saved = localStorage.getItem(`quiz-progress-${quiz.id}-${admissionNumber}`);
     let foundSaved = false;
+    
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed) {
+        if (parsed && parsed.answers && Object.keys(parsed.answers).length > 0) {
           setHasSavedProgress(true);
           setStudentName(parsed.studentName || '');
           foundSaved = true;
@@ -243,8 +249,23 @@ export default function QuizPage() {
       }
     }
     
-    // Only reset state if NOT resuming
+    // Check server for saved progress
+    if (!foundSaved && admissionNumber) {
+      try {
+        const serverData = await loadProgressFromServer();
+        if (serverData && serverData.answers && Object.keys(serverData.answers).length > 0) {
+          setHasSavedProgress(true);
+          setStudentName(serverData.student_name || '');
+          foundSaved = true;
+        }
+      } catch (error) {
+        console.error('Error checking server progress:', error);
+      }
+    }
+    
+    // Only reset state if NOT resuming and no saved progress found
     if (!foundSaved && !isResuming) {
+      setHasSavedProgress(false);
       setHasSubmitted(false);
       setIsSubmitted(false);
       setStarted(false);
