@@ -49,77 +49,124 @@ export default function QuizPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingToServer, setIsSavingToServer] = useState(false);
+  const [isResuming, setIsResuming] = useState(false);
+
+  // Save progress to server
+  const saveProgressToServer = async () => {
+    if (!selectedQuiz || !admissionNumber) return;
+
+    setIsSavingToServer(true);
+    try {
+      const { error } = await supabase
+        .from('quiz_progress')
+        .upsert({
+          quiz_id: selectedQuiz.id,
+          admission_number: admissionNumber,
+          student_name: studentName,
+          answers: answers,
+          current_question: current,
+          last_saved: new Date().toISOString()
+        }, {
+          onConflict: 'quiz_id,admission_number'
+        });
+
+      if (error) throw error;
+
+      setLastSaved(new Date());
+      console.log('Progress saved to server, current question:', current);
+    } catch (error) {
+      console.error('Error saving progress:', error);
+    } finally {
+      setIsSavingToServer(false);
+    }
+  };
+
+  // Load progress from server
+  const loadProgressFromServer = async () => {
+    if (!selectedQuiz || !admissionNumber) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('quiz_progress')
+        .select('*')
+        .eq('quiz_id', selectedQuiz.id)
+        .eq('admission_number', admissionNumber)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        console.log('Server data loaded:', data);
+        return data; // Return the data for further processing
+      }
+    } catch (error) {
+      console.error('Error loading progress:', error);
+      return null;
+    }
+  };
 
   // Auto-save and resume logic
   const QUIZ_KEY = selectedQuiz && admissionNumber ? `quiz-progress-${selectedQuiz.id}-${admissionNumber}` : '';
 
-  // Auto-save on every change
+  // Auto-save to both localStorage and server with debounce
   useEffect(() => {
-    if (QUIZ_KEY && !isSubmitted && !hasSubmitted) {
-      setIsSaving(true);
-      const saveData = {
-        studentName,
-        admissionNumber,
-        answers,
-        locked,
-        current,
-        started,
-        lastSaved: new Date().toISOString()
-      };
-      localStorage.setItem(QUIZ_KEY, JSON.stringify(saveData));
-      setLastSaved(new Date());
-      setTimeout(() => setIsSaving(false), 1000);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentName, admissionNumber, answers, locked, current, started, QUIZ_KEY]);
+    if (!QUIZ_KEY || isSubmitted || hasSubmitted) return;
 
-  // Restore progress on load
+    const saveData = {
+      studentName,
+      admissionNumber,
+      answers,
+      locked,
+      current,
+      started,
+      lastSaved: new Date().toISOString()
+    };
+
+    // Save to localStorage
+    setIsSaving(true);
+    localStorage.setItem(QUIZ_KEY, JSON.stringify(saveData));
+    setLastSaved(new Date());
+    console.log('Progress saved to localStorage, current question:', current);
+    setTimeout(() => setIsSaving(false), 1000);
+
+    // Debounce server save
+    const timeoutId = setTimeout(() => {
+    saveProgressToServer();
+    }, 2000); // Wait 2 seconds before saving to server
+
+    return () => clearTimeout(timeoutId);
+  }, [studentName, admissionNumber, answers, locked, current, started, QUIZ_KEY, isSubmitted, hasSubmitted]);
+
+  // Restore progress on load - only handle initial load, not resume
   useEffect(() => {
-    if (QUIZ_KEY && !isSubmitted && !hasSubmitted) {
+    if (QUIZ_KEY && !isSubmitted && !hasSubmitted && !isResuming) {
       const saved = localStorage.getItem(QUIZ_KEY);
       setHasSavedProgress(!!saved);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           if (parsed) {
-            // Only restore the current position if we're resuming
-            if (parsed.resumeNow) {
               setStudentName(parsed.studentName || '');
               setAnswers(parsed.answers || {});
               setLocked(parsed.locked || {});
-              setCurrent(parsed.current || 0);
-              setStarted(true);
               if (parsed.lastSaved) {
                 setLastSaved(new Date(parsed.lastSaved));
-              }
-              
-              // Show a toast to confirm resume
-              toast({
-                title: 'Quiz Resumed',
-                description: `Continuing from question ${parsed.current + 1}`,
-                status: 'success',
-                duration: 3000,
-                isClosable: true,
-              });
-              
-              // Remove the resumeNow flag
-              localStorage.setItem(QUIZ_KEY, JSON.stringify({ ...parsed, resumeNow: false }));
             }
           }
         } catch (error) {
           console.error('Error restoring quiz:', error);
-          toast({
-            title: 'Error Restoring Quiz',
-            description: 'Could not restore your progress. Starting from the beginning.',
-            status: 'error',
-            duration: 5000,
-            isClosable: true,
-          });
         }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [QUIZ_KEY]);
+
+  // Add effect to handle started state changes
+  useEffect(() => {
+    if (started && isResuming) {
+      console.log('Started state changed, current question:', current);
+    }
+  }, [started, isResuming, current]);
 
   useEffect(() => {
     fetchQuizzes();
@@ -182,29 +229,32 @@ export default function QuizPage() {
     
     // Check for saved progress
     const saved = localStorage.getItem(`quiz-progress-${quiz.id}-${admissionNumber}`);
+    let foundSaved = false;
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed) {
           setHasSavedProgress(true);
-          // Don't auto-resume, just show the option to resume
           setStudentName(parsed.studentName || '');
+          foundSaved = true;
         }
       } catch (error) {
         console.error('Error checking saved progress:', error);
       }
     }
     
-    // Reset other states
-    setHasSubmitted(false);
-    setIsSubmitted(false);
-    setStarted(false);
-    setShowRevision(false);
-    setShowLeaderboard(false);
-    setAnswers({});
-    setLocked({});
-    setCurrent(0);
-    setLastSaved(null);
+    // Only reset state if NOT resuming
+    if (!foundSaved && !isResuming) {
+      setHasSubmitted(false);
+      setIsSubmitted(false);
+      setStarted(false);
+      setShowRevision(false);
+      setShowLeaderboard(false);
+      setAnswers({});
+      setLocked({});
+      setCurrent(0);
+      setLastSaved(null);
+    }
   };
 
   const fetchLeaderboard = async () => {
@@ -295,7 +345,88 @@ export default function QuizPage() {
   };
 
   const handleResume = async () => {
-    await loadProgressFromServer();
+    setIsResuming(true);
+    try {
+      // First try to load from server
+      const serverData = await loadProgressFromServer();
+      console.log('Server data in handleResume:', serverData);
+      
+      if (serverData) {
+        // If we have server data, use it directly
+        console.log('Using server data, current question:', serverData.current_question);
+        
+        // Set the state in the correct order
+        setStarted(true);
+        setStudentName(serverData.student_name || '');
+        setAnswers(serverData.answers || {});
+        setLocked({}); // Reset locked state for resumed quiz
+        setCurrent(serverData.current_question);
+        setLastSaved(new Date(serverData.last_saved));
+        
+        // Update localStorage with server data
+        const saveData = {
+          studentName: serverData.student_name,
+          admissionNumber: serverData.admission_number,
+          answers: serverData.answers,
+          locked: {},
+          current: serverData.current_question,
+          started: true,
+          lastSaved: serverData.last_saved
+        };
+        localStorage.setItem(QUIZ_KEY, JSON.stringify(saveData));
+        
+        // Show confirmation toast
+        toast({
+          title: 'Quiz Resumed',
+          description: `Continuing from question ${serverData.current_question + 1}`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      } else {
+        // Fallback to localStorage only if no server data
+        const saved = localStorage.getItem(QUIZ_KEY);
+        console.log('No server data, falling back to localStorage:', saved);
+        
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed) {
+              console.log('Using localStorage data, current question:', parsed.current);
+              
+              setStarted(true);
+              setStudentName(parsed.studentName || '');
+              setAnswers(parsed.answers || {});
+              setLocked(parsed.locked || {});
+              setCurrent(parsed.current);
+              
+              if (parsed.lastSaved) {
+                setLastSaved(new Date(parsed.lastSaved));
+              }
+              
+              toast({
+                title: 'Quiz Resumed',
+                description: `Continuing from question ${parsed.current + 1}`,
+                status: 'success',
+                duration: 3000,
+                isClosable: true,
+              });
+            }
+          } catch (error) {
+            console.error('Error resuming quiz:', error);
+            toast({
+              title: 'Error Resuming Quiz',
+              description: 'Could not resume your progress. Starting from the beginning.',
+              status: 'error',
+              duration: 5000,
+              isClosable: true,
+            });
+          }
+        }
+      }
+    } finally {
+    setIsResuming(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -622,118 +753,6 @@ export default function QuizPage() {
   // Prevent going back to previous questions
   const canGoPrev = false; // always false now
 
-  // Save progress to server
-  const saveProgressToServer = async () => {
-    if (!selectedQuiz || !admissionNumber) return;
-    
-    setIsSavingToServer(true);
-    try {
-      const { error } = await supabase
-        .from('quiz_progress')
-        .upsert({
-          quiz_id: selectedQuiz.id,
-          admission_number: admissionNumber,
-          student_name: studentName,
-          answers: answers,
-          current_question: current,
-          last_saved: new Date().toISOString()
-        }, {
-          onConflict: 'quiz_id,admission_number'
-        });
-
-      if (error) throw error;
-      
-      toast({
-        title: 'Progress Saved',
-        description: 'Your progress has been saved to the server',
-        status: 'success',
-        duration: 2000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.error('Error saving progress:', error);
-      toast({
-        title: 'Error Saving Progress',
-        description: 'Your progress is still saved locally',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      });
-    } finally {
-      setIsSavingToServer(false);
-    }
-  };
-
-  // Load progress from server
-  const loadProgressFromServer = async () => {
-    if (!selectedQuiz || !admissionNumber) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('quiz_progress')
-        .select('*')
-        .eq('quiz_id', selectedQuiz.id)
-        .eq('admission_number', admissionNumber)
-        .single();
-
-      if (error) throw error;
-      
-      if (data) {
-        setStudentName(data.student_name || '');
-        setAnswers(data.answers || {});
-        setCurrent(data.current_question || 0);
-        setStarted(true);
-        
-        toast({
-          title: 'Progress Loaded',
-          description: `Continuing from question ${data.current_question + 1}`,
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-      }
-    } catch (error) {
-      console.error('Error loading progress:', error);
-      // Fall back to localStorage if server load fails
-      const saved = localStorage.getItem(QUIZ_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed) {
-            setStudentName(parsed.studentName || '');
-            setAnswers(parsed.answers || {});
-            setCurrent(parsed.current || 0);
-            setStarted(true);
-          }
-        } catch {}
-      }
-    }
-  };
-
-  // Auto-save to both localStorage and server
-  useEffect(() => {
-    if (QUIZ_KEY && !isSubmitted && !hasSubmitted) {
-      // Save to localStorage
-      setIsSaving(true);
-      const saveData = {
-        studentName,
-        admissionNumber,
-        answers,
-        locked,
-        current,
-        started,
-        lastSaved: new Date().toISOString()
-      };
-      localStorage.setItem(QUIZ_KEY, JSON.stringify(saveData));
-      setLastSaved(new Date());
-      setTimeout(() => setIsSaving(false), 1000);
-
-      // Also save to server
-      saveProgressToServer();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentName, admissionNumber, answers, locked, current, started, QUIZ_KEY]);
-
   return (
     <Container maxW={{ base: '100%', md: 'container.md' }} py={6} px={2}>
       <VStack spacing={6} align="stretch">
@@ -840,12 +859,7 @@ export default function QuizPage() {
           <HStack spacing={2}>
             {isSaving && (
               <Text fontSize="sm" color="blue.500">
-                Saving locally...
-              </Text>
-            )}
-            {isSavingToServer && (
-              <Text fontSize="sm" color="green.500">
-                Saving to server...
+                Saving...
               </Text>
             )}
           </HStack>
