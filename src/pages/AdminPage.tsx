@@ -43,7 +43,11 @@ import {
 } from '@chakra-ui/react';
 import { DeleteIcon } from '@chakra-ui/icons';
 import { supabase } from '../lib/supabase';
+<<<<<<< HEAD
 import type { Quiz, Question, Submission, Assignment, AssignmentSubmission } from '../lib/supabase';
+=======
+import type { Quiz, Question, Submission } from '../lib/supabase';
+>>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
 import { motion, AnimatePresence } from 'framer-motion';
 
 type QuestionFormData = {
@@ -75,11 +79,16 @@ export default function AdminPage() {
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const { isOpen: isViewAnswersOpen, onOpen: onViewAnswersOpen, onClose: onViewAnswersClose } = useDisclosure();
 
+<<<<<<< HEAD
   const [assignmentSubmissions, setAssignmentSubmissions] = useState<(AssignmentSubmission & { assignment: Assignment })[]>([]);
 
   useEffect(() => {
     fetchQuizzes();
     fetchAssignmentSubmissions();
+=======
+  useEffect(() => {
+    fetchQuizzes();
+>>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
   }, []);
 
   useEffect(() => {
@@ -151,6 +160,7 @@ export default function AdminPage() {
     }
   };
 
+<<<<<<< HEAD
   const fetchAssignmentSubmissions = async () => {
     try {
       const { data, error } = await supabase
@@ -164,6 +174,8 @@ export default function AdminPage() {
     }
   };
 
+=======
+>>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
   const handleCreateQuiz = async () => {
     if (!newQuizTitle.trim()) return;
 
@@ -742,6 +754,7 @@ export default function AdminPage() {
             </ModalFooter>
           </ModalContent>
         </Modal>
+<<<<<<< HEAD
 
         {/* Assignment Submissions Section */}
         <Card>
@@ -781,6 +794,8 @@ export default function AdminPage() {
             </VStack>
           </CardBody>
         </Card>
+=======
+>>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
       </VStack>
     </Container>
   );

@@ -25,9 +25,12 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import type { Quiz, Question, Submission } from '../lib/supabase';
+<<<<<<< HEAD
 import { useNavigate } from 'react-router-dom';
 
 const MotionButton = motion(Button);
+=======
+>>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
 
 export default function QuizPage() {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -54,7 +57,10 @@ export default function QuizPage() {
   const [isSavingToServer, setIsSavingToServer] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
   const [showQuizListContent, setShowQuizListContent] = useState(false);
+<<<<<<< HEAD
   const navigate = useNavigate();
+=======
+>>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
 
   // Save progress to server
   const saveProgressToServer = async () => {
@@ -713,7 +719,11 @@ export default function QuizPage() {
                       </Text>
                     </motion.div>
                     
+<<<<<<< HEAD
                     <MotionButton
+=======
+                    <motion.div
+>>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -736,6 +746,7 @@ export default function QuizPage() {
                       >
                         View Available Quizzes
                       </Button>
+<<<<<<< HEAD
                     </MotionButton>
 
                     <MotionButton
@@ -762,6 +773,9 @@ export default function QuizPage() {
                         Submit Assignment
                       </Button>
                     </MotionButton>
+=======
+                    </motion.div>
+>>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
 
                     <motion.div
                       initial={{ opacity: 0 }}
@@ -1010,7 +1024,11 @@ export default function QuizPage() {
                               <Text color="gray.600" fontSize="sm">
                                 Challenge yourself with this quiz and test your knowledge!
                               </Text>
+<<<<<<< HEAD
                               <MotionButton
+=======
+                              <motion.div
+>>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 style={{ width: '100%' }}
@@ -1032,7 +1050,11 @@ export default function QuizPage() {
                                 >
                                   Start Quiz
                                 </Button>
+<<<<<<< HEAD
                               </MotionButton>
+=======
+                              </motion.div>
+>>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
                             </VStack>
                           </CardBody>
                         </Card>
