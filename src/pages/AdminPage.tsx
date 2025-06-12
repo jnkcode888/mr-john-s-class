@@ -43,11 +43,7 @@ import {
 } from '@chakra-ui/react';
 import { DeleteIcon } from '@chakra-ui/icons';
 import { supabase } from '../lib/supabase';
-<<<<<<< HEAD
 import type { Quiz, Question, Submission, Assignment, AssignmentSubmission } from '../lib/supabase';
-=======
-import type { Quiz, Question, Submission } from '../lib/supabase';
->>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
 import { motion, AnimatePresence } from 'framer-motion';
 
 type QuestionFormData = {
@@ -78,17 +74,11 @@ export default function AdminPage() {
 
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const { isOpen: isViewAnswersOpen, onOpen: onViewAnswersOpen, onClose: onViewAnswersClose } = useDisclosure();
-
-<<<<<<< HEAD
   const [assignmentSubmissions, setAssignmentSubmissions] = useState<(AssignmentSubmission & { assignment: Assignment })[]>([]);
 
   useEffect(() => {
     fetchQuizzes();
     fetchAssignmentSubmissions();
-=======
-  useEffect(() => {
-    fetchQuizzes();
->>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
   }, []);
 
   useEffect(() => {
@@ -160,7 +150,6 @@ export default function AdminPage() {
     }
   };
 
-<<<<<<< HEAD
   const fetchAssignmentSubmissions = async () => {
     try {
       const { data, error } = await supabase
@@ -174,8 +163,6 @@ export default function AdminPage() {
     }
   };
 
-=======
->>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
   const handleCreateQuiz = async () => {
     if (!newQuizTitle.trim()) return;
 
@@ -754,48 +741,6 @@ export default function AdminPage() {
             </ModalFooter>
           </ModalContent>
         </Modal>
-<<<<<<< HEAD
-
-        {/* Assignment Submissions Section */}
-        <Card>
-          <CardBody>
-            <VStack spacing={4} align="stretch">
-              <Heading size="md">Assignment Submissions</Heading>
-              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                {assignmentSubmissions.length === 0 ? (
-                  <Text>No assignment submissions found.</Text>
-                ) : (
-                  assignmentSubmissions.map((submission, idx) => (
-                    <motion.div
-                      key={submission.id}
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: idx * 0.08 }}
-                      whileHover={{ scale: 1.03, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}
-                    >
-                      <Card boxShadow="lg" borderRadius="xl" bg="white" p={4}>
-                        <CardBody>
-                          <VStack align="start" spacing={3}>
-                            <Heading size="sm" color="blue.700">{submission.assignment?.title || 'Untitled Assignment'}</Heading>
-                            <Text fontSize="sm" color="gray.600">{submission.assignment?.description}</Text>
-                            <Text fontWeight="bold">Student: <span style={{ color: '#2B6CB0' }}>{submission.student_name}</span></Text>
-                            <Text>Admission No: <b>{submission.admission_number}</b></Text>
-                            <Text fontSize="xs" color="gray.500">Submitted: {new Date(submission.created_at).toLocaleString()}</Text>
-                            <Button as="a" href={submission.document_url} target="_blank" colorScheme="green" size="sm" mt={2} _hover={{ textDecoration: 'underline' }}>
-                              View/Download Document
-                            </Button>
-                          </VStack>
-                        </CardBody>
-                      </Card>
-                    </motion.div>
-                  ))
-                )}
-              </SimpleGrid>
-            </VStack>
-          </CardBody>
-        </Card>
-=======
->>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
       </VStack>
     </Container>
   );

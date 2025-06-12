@@ -28,7 +28,6 @@ export type Submission = {
   admission_number: string;
   answers: Record<string, number>;
   submitted_at: string;
-<<<<<<< HEAD
 };
 
 export type Assignment = {
@@ -45,6 +44,4 @@ export type AssignmentSubmission = {
   admission_number: string;
   document_url: string;
   created_at: string;
-=======
->>>>>>> 9b903dab9d848f902c85131f7a453ff3927f1fc8
 }; 
