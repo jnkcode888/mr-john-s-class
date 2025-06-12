@@ -28,7 +28,7 @@ export type Submission = {
   admission_number: string;
   answers: Record<string, number>;
   submitted_at: string;
-};
+}; 
 
 export type Assignment = {
   id: string;
