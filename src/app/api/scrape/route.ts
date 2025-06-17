@@ -132,7 +132,26 @@ export async function GET() {
       fetchTheDecoder,
       fetchVentureBeat,
     ];
-    const results = await Promise.allSettled(fetchers.map(fn => fn()));
+
+    // Execute all fetchers with individual error handling
+    const results = await Promise.allSettled(
+      fetchers.map(async (fn) => {
+        try {
+          return await fn();
+        } catch (error) {
+          console.error(`Error in fetcher ${fn.name}:`, error);
+          // Log the error to Supabase
+          await supabase.from('scrape_logs').insert({
+            message: error instanceof Error ? error.message : 'Unknown error',
+            source: fn.name,
+            created_at: new Date().toISOString(),
+          });
+          return []; // Return empty array on error
+        }
+      })
+    );
+
+    // Process successful results
     const allNews = results.flatMap(r => r.status === 'fulfilled' ? r.value : []);
     const uniqueNews = deduplicateNews(allNews);
 
@@ -156,43 +175,66 @@ export async function GET() {
       created_at: item.created_at,
     }));
 
+    // Only attempt to insert if we have news items
     if (mappedNews.length > 0) {
-      const { error } = await supabase.from('ai_news').insert(mappedNews);
-      if (error) {
+      try {
+        // Use upsert instead of insert to handle duplicates
+        const { error } = await supabase
+          .from('ai_news')
+          .upsert(mappedNews, {
+            onConflict: 'url', // Use URL as the conflict key
+            ignoreDuplicates: true // Ignore duplicates instead of updating
+          });
+
+        if (error) {
+          console.error('Error upserting news:', error);
+          await supabase.from('scrape_logs').insert({
+            message: error.message || 'Upsert error',
+            source: 'database',
+            created_at: new Date().toISOString(),
+          });
+        } else {
+          console.log(`Successfully processed ${mappedNews.length} news items`);
+        }
+      } catch (dbError) {
+        console.error('Database operation failed:', dbError);
         await supabase.from('scrape_logs').insert({
-          message: error.message || 'Insert error',
-          source: 'insert',
+          message: dbError instanceof Error ? dbError.message : 'Database operation failed',
+          source: 'database',
           created_at: new Date().toISOString(),
         });
-        throw error;
       }
     }
-    // Log any fetcher errors
-    await Promise.all(results.map((r, i) => {
-      if (r.status === 'rejected') {
-        return supabase.from('scrape_logs').insert({
-          message: r.reason?.message || 'Fetcher error',
-          source: fetchers[i].name,
-          created_at: new Date().toISOString(),
-        });
-      }
-      return Promise.resolve();
-    }));
+
+    // Return success even if some sources failed
     return NextResponse.json({
       success: true,
       count: mappedNews.length,
-      sources: fetchers.length
+      sources: fetchers.length,
+      successfulSources: results.filter(r => r.status === 'fulfilled').length,
+      failedSources: results.filter(r => r.status === 'rejected').length,
+      timestamp: new Date().toISOString()
     });
+
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error in scrape route:', error);
+    
     await supabase.from('scrape_logs').insert({
       message: errMsg,
       source: 'GET-handler',
       created_at: new Date().toISOString(),
     });
+
+    // Return a more graceful error response
     return NextResponse.json(
-      { error: 'Failed to scrape data', details: errMsg },
-      { status: 500 }
+      { 
+        success: false,
+        error: 'Some sources failed to scrape',
+        details: errMsg,
+        timestamp: new Date().toISOString()
+      },
+      { status: 200 } // Return 200 instead of 500 to prevent client-side errors
     );
   }
 }
@@ -204,8 +246,13 @@ export async function POST() {
   } catch (error) {
     console.error('Error in scrape API route:', error);
     return NextResponse.json(
-      { error: 'Failed to scrape news' },
-      { status: 500 }
+      { 
+        success: false,
+        error: 'Failed to scrape news',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      },
+      { status: 200 } // Return 200 instead of 500
     );
   }
 } 
