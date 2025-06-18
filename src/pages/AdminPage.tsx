@@ -47,10 +47,13 @@ import {
   useColorMode,
   Icon,
 } from '@chakra-ui/react';
-import { DeleteIcon, AddIcon, ViewIcon, DownloadIcon, StarIcon, TimeIcon } from '@chakra-ui/icons';
+import { DeleteIcon, AddIcon, ViewIcon, DownloadIcon, StarIcon, TimeIcon, EditIcon } from '@chakra-ui/icons';
 import { supabase } from '../lib/supabase';
-import type { Quiz, Question, Submission, Assignment, AssignmentSubmission } from '../lib/supabase';
+import type { Quiz, Question, Submission, Assignment, AssignmentSubmission, UnitNote } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
+import { jsPDF } from 'jspdf';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const MotionCard = motion(Card);
 const MotionButton = motion(Button);
@@ -60,6 +63,26 @@ type QuestionFormData = {
   choices: string[];
   correct_choice: number;
 };
+
+// Add types for Unit, Topic, and TopicNote
+interface Unit {
+  id: number;
+  title: string;
+}
+interface Topic {
+  id: number;
+  unit_id: number;
+  title: string;
+}
+interface TopicNote {
+  id: number;
+  topic_id: number;
+  title: string;
+  content: string;
+  file_url?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function AdminPage() {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
@@ -95,10 +118,30 @@ export default function AdminPage() {
   const [assignmentSubmissionsForModal, setAssignmentSubmissionsForModal] = useState<(AssignmentSubmission & { assignment: Assignment })[]>([]);
   const { isOpen: isSubmissionsModalOpen, onOpen: onSubmissionsModalOpen, onClose: onSubmissionsModalClose } = useDisclosure();
 
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [topicNotes, setTopicNotes] = useState<TopicNote[]>([]);
+  const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
+  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
+  const [newNote, setNewNote] = useState({
+    topic_id: 0,
+    title: '',
+    content: '',
+    file_url: '',
+  });
+
+  // Add state for units and topics management
+  const [unitForm, setUnitForm] = useState({ title: '', description: '', icon: '' });
+  const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
+  const [topicForm, setTopicForm] = useState({ unit_id: '', title: '', description: '' });
+  const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
+
   useEffect(() => {
     fetchQuizzes();
     fetchAssignmentSubmissions();
     fetchAssignments();
+    fetchUnits();
+    fetchTopicNotes();
   }, []);
 
   useEffect(() => {
@@ -107,6 +150,14 @@ export default function AdminPage() {
       fetchSubmissions(selectedQuiz.id);
     }
   }, [selectedQuiz]);
+
+  useEffect(() => {
+    if (selectedUnitId) {
+      fetchTopics(selectedUnitId);
+    } else {
+      setTopics([]);
+    }
+  }, [selectedUnitId]);
 
   const fetchQuizzes = async () => {
     try {
@@ -220,6 +271,19 @@ export default function AdminPage() {
         isClosable: true,
       });
     }
+  };
+
+  const fetchUnits = async () => {
+    const { data, error } = await supabase.from('units').select('id, title').order('id');
+    if (!error) setUnits(data || []);
+  };
+  const fetchTopics = async (unitId: number) => {
+    const { data, error } = await supabase.from('topics').select('id, unit_id, title').eq('unit_id', unitId).order('id');
+    if (!error) setTopics(data || []);
+  };
+  const fetchTopicNotes = async () => {
+    const { data, error } = await supabase.from('topic_notes').select('*').order('created_at', { ascending: false });
+    if (!error) setTopicNotes(data || []);
   };
 
   const handleCreateQuiz = async () => {
@@ -438,6 +502,65 @@ export default function AdminPage() {
     onSubmissionsModalOpen();
   };
 
+  const handleCreateNote = async () => {
+    if (!newNote.topic_id || !newNote.title || !newNote.content) return;
+    const { data, error } = await supabase.from('topic_notes').insert([newNote]).select();
+    if (!error && data) {
+      setTopicNotes([data[0], ...topicNotes]);
+      setNewNote({ topic_id: 0, title: '', content: '', file_url: '' });
+    }
+  };
+  const handleDeleteNote = async (id: number) => {
+    const { error } = await supabase.from('topic_notes').delete().eq('id', id);
+    if (!error) setTopicNotes(topicNotes.filter(n => n.id !== id));
+  };
+
+  // Add handlers for units
+  const handleAddUnit = async () => {
+    if (!unitForm.title) return;
+    const { data, error } = await supabase.from('units').insert([{ ...unitForm }]).select();
+    if (!error && data) {
+      setUnits([data[0], ...units]);
+      setUnitForm({ title: '', description: '', icon: '' });
+    }
+  };
+  const handleEditUnit = (unit: Unit) => setEditingUnit(unit);
+  const handleUpdateUnit = async () => {
+    if (!editingUnit) return;
+    const { data, error } = await supabase.from('units').update(editingUnit).eq('id', editingUnit.id).select();
+    if (!error && data) {
+      setUnits(units.map(u => (u.id === editingUnit.id ? data[0] : u)));
+      setEditingUnit(null);
+    }
+  };
+  const handleDeleteUnit = async (id: number) => {
+    const { error } = await supabase.from('units').delete().eq('id', id);
+    if (!error) setUnits(units.filter(u => u.id !== id));
+  };
+
+  // Add handlers for topics
+  const handleAddTopic = async () => {
+    if (!topicForm.unit_id || !topicForm.title) return;
+    const { data, error } = await supabase.from('topics').insert([{ ...topicForm, unit_id: Number(topicForm.unit_id) }]).select();
+    if (!error && data) {
+      setTopics([data[0], ...topics]);
+      setTopicForm({ unit_id: '', title: '', description: '' });
+    }
+  };
+  const handleEditTopic = (topic: Topic) => setEditingTopic(topic);
+  const handleUpdateTopic = async () => {
+    if (!editingTopic) return;
+    const { data, error } = await supabase.from('topics').update(editingTopic).eq('id', editingTopic.id).select();
+    if (!error && data) {
+      setTopics(topics.map(t => (t.id === editingTopic.id ? data[0] : t)));
+      setEditingTopic(null);
+    }
+  };
+  const handleDeleteTopic = async (id: number) => {
+    const { error } = await supabase.from('topics').delete().eq('id', id);
+    if (!error) setTopics(topics.filter(t => t.id !== id));
+  };
+
   return (
     <Container maxW="container.xl" py={8}>
       <VStack spacing={8} align="stretch">
@@ -467,14 +590,147 @@ export default function AdminPage() {
           size="lg"
         >
           <TabList>
+            <Tab>Units</Tab>
+            <Tab>Topics</Tab>
+            <Tab>Unit Notes</Tab>
             <Tab>Quizzes</Tab>
             <Tab>Assignments</Tab>
-            <Tab>Submissions</Tab>
           </TabList>
 
           <TabPanels>
-            {/* Quiz Management Panel */}
+            {/* Units Management Tab */}
             <TabPanel>
+              <VStack align="stretch" spacing={4}>
+                <Heading size="md">Manage Units</Heading>
+                <HStack>
+                  <Input placeholder="Title" value={unitForm.title} onChange={e => setUnitForm({ ...unitForm, title: e.target.value })} />
+                  <Input placeholder="Description" value={unitForm.description} onChange={e => setUnitForm({ ...unitForm, description: e.target.value })} />
+                  <Input placeholder="Icon (emoji)" value={unitForm.icon} onChange={e => setUnitForm({ ...unitForm, icon: e.target.value })} />
+                  <Button colorScheme="blue" onClick={handleAddUnit}>Add Unit</Button>
+                </HStack>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                  {units.map(unit => (
+                    <Card key={unit.id}>
+                      <CardBody>
+                        <VStack align="stretch" spacing={2}>
+                          {editingUnit?.id === unit.id ? (
+                            <>
+                              <Input value={editingUnit.title} onChange={e => setEditingUnit({ ...editingUnit, title: e.target.value })} />
+                              <Input value={editingUnit.description} onChange={e => setEditingUnit({ ...editingUnit, description: e.target.value })} />
+                              <Input value={editingUnit.icon} onChange={e => setEditingUnit({ ...editingUnit, icon: e.target.value })} />
+                              <Button colorScheme="green" size="sm" onClick={handleUpdateUnit}>Save</Button>
+                              <Button size="sm" onClick={() => setEditingUnit(null)}>Cancel</Button>
+                            </>
+                          ) : (
+                            <>
+                              <Heading size="sm">{unit.title} {unit.icon}</Heading>
+                              <Text>{unit.description}</Text>
+                              <HStack>
+                                <Button leftIcon={<EditIcon />} size="sm" onClick={() => handleEditUnit(unit)}>Edit</Button>
+                                <Button colorScheme="red" size="sm" onClick={() => handleDeleteUnit(unit.id)}>Delete</Button>
+                              </HStack>
+                            </>
+                          )}
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </SimpleGrid>
+              </VStack>
+            </TabPanel>
+
+            {/* Topics Management Tab */}
+            <TabPanel>
+              <VStack align="stretch" spacing={4}>
+                <Heading size="md">Manage Topics</Heading>
+                <HStack>
+                  <Select placeholder="Select Unit" value={topicForm.unit_id} onChange={e => setTopicForm({ ...topicForm, unit_id: e.target.value })}>
+                    {units.map(unit => <option key={unit.id} value={unit.id}>{unit.title}</option>)}
+                  </Select>
+                  <Input placeholder="Title" value={topicForm.title} onChange={e => setTopicForm({ ...topicForm, title: e.target.value })} />
+                  <Input placeholder="Description" value={topicForm.description} onChange={e => setTopicForm({ ...topicForm, description: e.target.value })} />
+                  <Button colorScheme="blue" onClick={handleAddTopic}>Add Topic</Button>
+                </HStack>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                  {topics.map(topic => (
+                    <Card key={topic.id}>
+                      <CardBody>
+                        <VStack align="stretch" spacing={2}>
+                          {editingTopic?.id === topic.id ? (
+                            <>
+                              <Select value={editingTopic.unit_id} onChange={e => setEditingTopic({ ...editingTopic, unit_id: Number(e.target.value) })}>
+                                {units.map(unit => <option key={unit.id} value={unit.id}>{unit.title}</option>)}
+                              </Select>
+                              <Input value={editingTopic.title} onChange={e => setEditingTopic({ ...editingTopic, title: e.target.value })} />
+                              <Input value={editingTopic.description} onChange={e => setEditingTopic({ ...editingTopic, description: e.target.value })} />
+                              <Button colorScheme="green" size="sm" onClick={handleUpdateTopic}>Save</Button>
+                              <Button size="sm" onClick={() => setEditingTopic(null)}>Cancel</Button>
+                            </>
+                          ) : (
+                            <>
+                              <Heading size="sm">{topic.title}</Heading>
+                              <Text>Unit: {units.find(u => u.id === topic.unit_id)?.title || 'N/A'}</Text>
+                              <Text>{topic.description}</Text>
+                              <HStack>
+                                <Button leftIcon={<EditIcon />} size="sm" onClick={() => handleEditTopic(topic)}>Edit</Button>
+                                <Button colorScheme="red" size="sm" onClick={() => handleDeleteTopic(topic.id)}>Delete</Button>
+                              </HStack>
+                            </>
+                          )}
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </SimpleGrid>
+              </VStack>
+            </TabPanel>
+
+            {/* Unit Notes Panel */}
+            <TabPanel>
+              <VStack spacing={6} align="stretch">
+                <Heading size="md">Unit Notes</Heading>
+                <VStack align="stretch" spacing={4}>
+                  <Select placeholder="Select Unit" value={selectedUnitId ?? ''} onChange={e => setSelectedUnitId(Number(e.target.value))}>
+                    {units.map(unit => <option key={unit.id} value={unit.id}>{unit.title}</option>)}
+                  </Select>
+                  <Select placeholder="Select Topic" value={selectedTopicId ?? ''} onChange={e => { setSelectedTopicId(Number(e.target.value)); setNewNote({ ...newNote, topic_id: Number(e.target.value) }); }} isDisabled={!selectedUnitId}>
+                    {topics.map(topic => <option key={topic.id} value={topic.id}>{topic.title}</option>)}
+                  </Select>
+                  <Input placeholder="Note Title" value={newNote.title} onChange={e => setNewNote({ ...newNote, title: e.target.value })} isDisabled={!selectedTopicId} />
+                  <ReactQuill
+                    value={newNote.content}
+                    onChange={value => setNewNote({ ...newNote, content: value })}
+                    readOnly={!selectedTopicId}
+                    theme="snow"
+                    style={{ minHeight: '200px', marginBottom: '16px' }}
+                  />
+                  <Input placeholder="File URL (optional)" value={newNote.file_url} onChange={e => setNewNote({ ...newNote, file_url: e.target.value })} isDisabled={!selectedTopicId} />
+                  <Button colorScheme="blue" onClick={handleCreateNote} isDisabled={!selectedTopicId || !newNote.title || !newNote.content}>Add Note</Button>
+                </VStack>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+                  {topicNotes.map(note => {
+                    const topic = topics.find(t => t.id === note.topic_id);
+                    const unit = units.find(u => u.id === topic?.unit_id);
+                    return (
+                      <Card key={note.id}>
+                        <CardBody>
+                          <VStack align="stretch" spacing={2}>
+                            <Heading size="sm">{note.title}</Heading>
+                            <Text fontSize="sm" color="gray.500">Unit: {unit?.title || 'N/A'} | Topic: {topic?.title || 'N/A'}</Text>
+                            <Text noOfLines={3}>{note.content}</Text>
+                            <Button colorScheme="red" size="sm" onClick={() => handleDeleteNote(note.id)}>Delete</Button>
+                          </VStack>
+                        </CardBody>
+                      </Card>
+                    );
+                  })}
+                </SimpleGrid>
+              </VStack>
+            </TabPanel>
+
+            {/* Quiz Panel */}
+            <TabPanel>
+              <VStack spacing={6} align="stretch">
               {/* Create New Quiz */}
               <Card>
                 <CardBody>
@@ -534,27 +790,15 @@ export default function AdminPage() {
               {selectedQuiz && (
                 <Card>
                   <CardBody>
-                    <Tabs onChange={(index) => setSelectedTab(index)}>
-                      <TabList>
-                        <Tab>Questions</Tab>
-                        <Tab>Submissions</Tab>
-                        <Tab>Leaderboard</Tab>
-                      </TabList>
-
-                      <TabPanels>
-                        {/* Questions Panel */}
-                        <TabPanel>
                           <VStack spacing={4} align="stretch">
-                            <HStack justify="space-between">
                               <Heading size="md">Questions for {selectedQuiz.title}</Heading>
                               <Button
-                                leftIcon={<DeleteIcon />}
+                          leftIcon={<AddIcon />}
                                 colorScheme="blue"
                                 onClick={onOpen}
                               >
                                 Add Question
                               </Button>
-                            </HStack>
 
                             {questions.map((question) => (
                               <Card key={question.id} variant="outline">
@@ -584,357 +828,59 @@ export default function AdminPage() {
                               </Card>
                             ))}
                           </VStack>
-                        </TabPanel>
-
-                        {/* Submissions Panel */}
-                        <TabPanel>
-                          <VStack spacing={4} align="stretch">
-                            <Heading size="md">Submissions for {selectedQuiz.title}</Heading>
-                            <HStack spacing={2} mb={2} flexWrap="wrap">
-                              <Input
-                                placeholder="Search by name or admission number"
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                maxW="sm"
-                              />
-                              <Input
-                                placeholder="Min score"
-                                type="number"
-                                value={minScore}
-                                onChange={e => setMinScore(e.target.value)}
-                                maxW="100px"
-                              />
-                              <Input
-                                placeholder="Max score"
-                                type="number"
-                                value={maxScore}
-                                onChange={e => setMaxScore(e.target.value)}
-                                maxW="100px"
-                              />
-                              <Text fontWeight="bold" ml="auto">Total: {filteredSubmissions.length}</Text>
-                            </HStack>
-                            {filteredSubmissions.length === 0 ? (
-                              <Text>No submissions found</Text>
-                            ) : (
-                              <AnimatePresence>
-                                {filteredSubmissions.map((submission, idx) => {
-                                  const color = submission.score >= 70 ? 'green.100' : submission.score >= 50 ? 'yellow.100' : 'red.100';
-                                  return (
-                                    <motion.div
-                                      key={submission.id}
-                                      initial={{ opacity: 0, y: 30 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      exit={{ opacity: 0, y: 30 }}
-                                      transition={{ duration: 0.2, delay: idx * 0.03 }}
-                                    >
-                                      <Card boxShadow="lg" borderRadius="xl" bg={color} mb={2}>
-                                        <CardBody>
-                                          <HStack justify="space-between" align="flex-start" flexWrap="wrap">
-                                            <VStack align="start" spacing={1} flex={1} minW={0}>
-                                              <Text fontWeight="bold" fontSize="lg">{submission.name}</Text>
-                                              <Text fontSize="sm" color="gray.600">Admission: {submission.admission_number}</Text>
-                                              <Text fontSize="sm" color="gray.500">Submitted: {formatDate(submission.submitted_at)}</Text>
-                                              <Badge colorScheme={submission.score >= 70 ? 'green' : submission.score >= 50 ? 'yellow' : 'red'} fontSize="md">
-                                                {submission.score}%
-                                              </Badge>
-                                            </VStack>
-                                            <Button 
-                                              size="sm" 
-                                              onClick={() => {
-                                                setSelectedSubmission(submission);
-                                                onViewAnswersOpen();
-                                              }}
-                                            >
-                                              View Answers
-                                            </Button>
-                                          </HStack>
                                         </CardBody>
                                       </Card>
-                                    </motion.div>
-                                  );
-                                })}
-                              </AnimatePresence>
                             )}
                           </VStack>
                         </TabPanel>
-
-                        {/* View Answers Modal */}
-                        <TabPanel>
-                          <Modal isOpen={isViewAnswersOpen} onClose={onViewAnswersClose} size="xl">
-                            <ModalOverlay />
-                            <ModalContent>
-                              <ModalHeader>
-                                {selectedSubmission?.name}'s Answers
-                              </ModalHeader>
-                              <ModalCloseButton />
-                              <ModalBody>
-                                <VStack spacing={4} align="stretch">
-                                  {selectedSubmission && questions.map((question) => (
-                                    <Card key={question.id} variant="outline">
-                                      <CardBody>
-                                        <VStack align="stretch" spacing={2}>
-                                          <Text fontWeight="bold">
-                                            {question.question_text}
-                                          </Text>
-                                          <Text>
-                                            Student's Answer:{' '}
-                                            {getAnswerText(
-                                              question.id,
-                                              selectedSubmission.answers[question.id],
-                                              questions
-                                            )}
-                                          </Text>
-                                          <Text>
-                                            Correct Answer:{' '}
-                                            {question.choices[question.correct_choice]}
-                                          </Text>
-                                          <Badge
-                                            colorScheme={
-                                              selectedSubmission.answers[question.id] ===
-                                              question.correct_choice
-                                                ? 'green'
-                                                : 'red'
-                                            }
-                                          >
-                                            {selectedSubmission.answers[question.id] ===
-                                            question.correct_choice
-                                              ? 'Correct'
-                                              : 'Incorrect'}
-                                          </Badge>
-                                        </VStack>
-                                      </CardBody>
-                                    </Card>
-                                  ))}
-                                </VStack>
-                              </ModalBody>
-                              <ModalFooter>
-                                <Button onClick={onViewAnswersClose}>Close</Button>
-                              </ModalFooter>
-                            </ModalContent>
-                          </Modal>
-                        </TabPanel>
-
-                        {/* Leaderboard Panel */}
-                        <TabPanel>
-                          <VStack spacing={4} align="stretch">
-                            <Heading size="md">Leaderboard for {selectedQuiz.title}</Heading>
-                            <HStack spacing={2} mb={2} flexWrap="wrap">
-                              <Input
-                                placeholder="Search by name or admission number"
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                maxW="sm"
-                              />
-                              <Input
-                                placeholder="Min score"
-                                type="number"
-                                value={minScore}
-                                onChange={e => setMinScore(e.target.value)}
-                                maxW="100px"
-                              />
-                              <Input
-                                placeholder="Max score"
-                                type="number"
-                                value={maxScore}
-                                onChange={e => setMaxScore(e.target.value)}
-                                maxW="100px"
-                              />
-                              <Text fontWeight="bold" ml="auto">Total: {filteredSubmissions.length}</Text>
-                            </HStack>
-                            <AnimatePresence>
-                              {filteredSubmissions.map((sub, idx) => {
-                                const color = sub.score >= 70 ? 'green.100' : sub.score >= 50 ? 'yellow.100' : 'red.100';
-                                return (
-                                  <motion.div
-                                    key={sub.id}
-                                    initial={{ opacity: 0, y: 30 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: 30 }}
-                                    transition={{ duration: 0.2, delay: idx * 0.03 }}
-                                  >
-                                    <Card boxShadow="lg" borderRadius="xl" bg={color} mb={2}>
-                                      <CardBody>
-                                        <HStack justify="space-between" align="flex-start" flexWrap="wrap">
-                                          <VStack align="start" spacing={1} flex={1} minW={0}>
-                                            <Text fontWeight="bold" fontSize="lg">{sub.name}</Text>
-                                            <Text fontSize="sm" color="gray.600">Admission: {sub.admission_number}</Text>
-                                            <Text fontSize="sm" color="gray.500">Submitted: {formatDate(sub.submitted_at)}</Text>
-                                            <Badge colorScheme={sub.score >= 70 ? 'green' : sub.score >= 50 ? 'yellow' : 'red'} fontSize="md">
-                                              {sub.score}%
-                                            </Badge>
-                                          </VStack>
-                                          <Text fontWeight="bold" fontSize="2xl" color="blue.600" minW="60px" textAlign="right">
-                                            #{idx + 1}
-                                          </Text>
-                                        </HStack>
-                                      </CardBody>
-                                    </Card>
-                                  </motion.div>
-                                );
-                              })}
-                            </AnimatePresence>
-                          </VStack>
-                        </TabPanel>
-                      </TabPanels>
-                    </Tabs>
-                  </CardBody>
-                </Card>
-              )}
-            </TabPanel>
 
             {/* Assignments Panel */}
             <TabPanel>
               <VStack spacing={6} align="stretch">
                 <Flex justify="space-between" align="center">
-                  <Heading size="lg">Assignments</Heading>
-                  <HStack>
-                    <Input
-                      placeholder="Search assignments..."
-                      maxW="300px"
-                      size="md"
-                    />
-                    <Select placeholder="Sort by" maxW="200px">
-                      <option value="newest">Newest First</option>
-                      <option value="oldest">Oldest First</option>
-                      <option value="title">Title</option>
-                    </Select>
-                  </HStack>
+                  <Heading size="md">Assignments</Heading>
+                  <Button
+                    leftIcon={<AddIcon />}
+                    colorScheme="blue"
+                    onClick={() => {
+                      setSelectedAssignment(null);
+                      onOpen();
+                    }}
+                  >
+                    Add Assignment
+                  </Button>
                 </Flex>
 
                 <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
                   {assignments.map((assignment) => (
-                    <MotionCard
-                      key={assignment.id}
-                      whileHover={{ scale: 1.03, boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}
-                      transition={{ type: 'spring', stiffness: 300 }}
-                      variant="outline"
-                    >
-                      <CardBody>
-                        <VStack align="stretch" spacing={3}>
-                          <Heading size="md">{assignment.title}</Heading>
-                          <Text color="gray.500">{assignment.description}</Text>
-                          <Text fontSize="sm" color="gray.400">Created: {formatDate(assignment.created_at)}</Text>
-                          <Button
-                            colorScheme="blue"
-                            leftIcon={<ViewIcon />}
-                            onClick={() => handleViewSubmissions(assignment)}
-                            mt={2}
-                          >
-                            View Submissions
-                          </Button>
-                        </VStack>
-                      </CardBody>
-                    </MotionCard>
-                  ))}
-                </SimpleGrid>
-
-                {assignments.length === 0 && (
-                  <Card variant="outline">
-                    <CardBody>
-                      <VStack spacing={4}>
-                        <Icon as={AddIcon} w={10} h={10} color="gray.400" />
-                        <Text textAlign="center" color="gray.500">
-                          No assignments yet. Create your first assignment!
-                        </Text>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-                )}
-              </VStack>
-            </TabPanel>
-
-            {/* Submissions Panel */}
-            <TabPanel>
-              <VStack spacing={6} align="stretch">
-                <Flex justify="space-between" align="center">
-                  <Heading size="lg">Assignment Submissions</Heading>
-                  <HStack>
-                    <Input
-                      placeholder="Search by student name or admission number..."
-                      maxW="300px"
-                      size="md"
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
-                    <Select 
-                      placeholder="Filter by assignment" 
-                      maxW="200px"
-                      value={selectedAssignmentFilter}
-                      onChange={(e) => setSelectedAssignmentFilter(e.target.value)}
-                    >
-                      {assignments.map(assignment => (
-                        <option key={assignment.id} value={assignment.id}>
-                          {assignment.title}
-                        </option>
-                      ))}
-                    </Select>
-                  </HStack>
-                </Flex>
-
-                <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-                  {assignmentSubmissions.map((submission) => (
-                    <Card key={submission.id} variant="outline">
+                    <Card key={assignment.id} variant="outline">
                       <CardBody>
                         <VStack align="stretch" spacing={4}>
-                          <Flex justify="space-between" align="center">
-                            <Heading size="md">{submission.assignment?.title || 'Unknown Assignment'}</Heading>
-                            <Badge colorScheme="green">Submitted</Badge>
-                          </Flex>
-                          
-                          <VStack align="stretch" spacing={2}>
-                            <HStack>
-                              <Text fontWeight="bold">Student:</Text>
-                              <Text>{submission.student_name}</Text>
-                            </HStack>
-                            <HStack>
-                              <Text fontWeight="bold">Admission:</Text>
-                              <Text>{submission.admission_number}</Text>
-                            </HStack>
-                            <HStack>
-                              <Text fontWeight="bold">Submitted:</Text>
-                              <Text>{formatDate(submission.created_at)}</Text>
-                            </HStack>
-                          </VStack>
-
-                          <Divider />
-
+                          <Heading size="md">{assignment.title}</Heading>
+                          <Text noOfLines={3}>{assignment.description}</Text>
                           <HStack justify="space-between">
-                            <Button
-                              as="a"
-                              href={submission.document_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              colorScheme="blue"
+                            <Badge colorScheme="blue">Created: {formatDate(assignment.created_at)}</Badge>
+                            <HStack>
+                              <IconButton
+                                aria-label="View submissions"
+                                icon={<ViewIcon />}
                               size="sm"
-                              leftIcon={<ViewIcon />}
-                            >
-                              View Submission
-                            </Button>
-                            <Button
-                              colorScheme="green"
+                                onClick={() => handleViewSubmissions(assignment)}
+                              />
+                              <IconButton
+                                aria-label="Delete assignment"
+                                icon={<DeleteIcon />}
                               size="sm"
-                              leftIcon={<StarIcon />}
-                            >
-                              Grade
-                            </Button>
+                                colorScheme="red"
+                                onClick={() => handleDeleteAssignment(assignment.id)}
+                              />
+                            </HStack>
                           </HStack>
                         </VStack>
                       </CardBody>
                     </Card>
                   ))}
                 </SimpleGrid>
-
-                {assignmentSubmissions.length === 0 && (
-                  <Card variant="outline">
-                    <CardBody>
-                      <VStack spacing={4}>
-                        <Icon as={ViewIcon} w={10} h={10} color="gray.400" />
-                        <Text textAlign="center" color="gray.500">
-                          No assignment submissions yet
-                        </Text>
-                      </VStack>
-                    </CardBody>
-                  </Card>
-                )}
               </VStack>
             </TabPanel>
           </TabPanels>

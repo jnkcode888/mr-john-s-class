@@ -29,6 +29,27 @@ CREATE TABLE submissions (
     CONSTRAINT unique_quiz_admission UNIQUE (quiz_id, admission_number)
 );
 
+-- Create unit_notes table
+CREATE TABLE unit_notes (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    unit_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    file_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create units table
+CREATE TABLE units (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    icon VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Insert sample quiz
 INSERT INTO quizzes (title) VALUES ('Sample Math Quiz');
 
@@ -110,4 +131,17 @@ INSERT INTO questions (quiz_id, question_text, choices, correct_choice) VALUES
 -- Create indexes for better query performance
 CREATE INDEX idx_questions_quiz_id ON questions(quiz_id);
 CREATE INDEX idx_submissions_quiz_id ON submissions(quiz_id);
-CREATE INDEX idx_submissions_submitted_at ON submissions(submitted_at); 
+CREATE INDEX idx_submissions_submitted_at ON submissions(submitted_at);
+CREATE INDEX idx_unit_notes_unit_id ON unit_notes(unit_id);
+
+-- Insert sample unit notes
+INSERT INTO unit_notes (unit_id, title, content) VALUES
+(1, 'Introduction to Basic Concepts', 'This unit covers the fundamental concepts...'),
+(1, 'Getting Started Guide', 'A comprehensive guide to help you get started...'),
+(2, 'Advanced Topics Overview', 'An overview of the advanced topics covered in this unit...');
+
+-- Insert sample units
+INSERT INTO units (title, description, icon) VALUES
+('Unit 1: Introduction', 'Basic concepts and fundamentals', '📚'),
+('Unit 2: Advanced Topics', 'Dive deeper into complex concepts', '🎯'),
+('Unit 3: Practical Applications', 'Real-world examples and case studies', '💡'); 

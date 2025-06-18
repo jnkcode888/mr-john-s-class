@@ -44,4 +44,14 @@ export type AssignmentSubmission = {
   admission_number: string;
   document_url: string;
   created_at: string;
+};
+
+export type UnitNote = {
+  id: string;
+  unit_id: number;
+  title: string;
+  content: string;
+  file_url?: string;
+  created_at: string;
+  updated_at: string;
 }; 

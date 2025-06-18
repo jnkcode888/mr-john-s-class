@@ -194,17 +194,32 @@ export default function QuizPage() {
 
   const fetchQuizzes = async () => {
     try {
+      console.log('Fetching quizzes...');
+      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      
       const { data, error } = await supabase
         .from('quizzes')
         .select('*')
         .order('created_at', { ascending: false });
-      if (error) throw error;
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Quizzes fetched successfully:', data);
       setQuizzes(data);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      
       toast({
         title: 'Error loading quizzes',
-        description: 'Please try again later',
+        description: error.message || 'Please try again later',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -742,25 +757,65 @@ export default function QuizPage() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <Button
-                        size="lg"
-                        colorScheme="green"
-                        bgGradient="linear(to-r, green.400, teal.500)"
-                        _hover={{
-                          bgGradient: "linear(to-r, green.500, teal.600)",
-                          transform: "translateY(-2px)",
-                          boxShadow: "lg"
-                        }}
-                        _active={{
-                          transform: "translateY(0px)"
-                        }}
-                        px={8}
-                        py={6}
-                        fontSize="xl"
-                        onClick={() => navigate('/assignments')}
-                      >
-                        Submit Assignment
-                      </Button>
+                      <VStack spacing={4} align="stretch">
+                        <Button
+                          size="lg"
+                          colorScheme="blue"
+                          bgGradient="linear(to-r, blue.400, cyan.500)"
+                          _hover={{
+                            bgGradient: "linear(to-r, blue.500, cyan.600)",
+                            transform: "translateY(-2px)",
+                            boxShadow: "lg"
+                          }}
+                          _active={{
+                            transform: "translateY(0px)"
+                          }}
+                          px={8}
+                          py={6}
+                          fontSize="xl"
+                          onClick={() => navigate('/units')}
+                        >
+                          View Notes
+                        </Button>
+                        <Button
+                          size="lg"
+                          colorScheme="purple"
+                          bgGradient="linear(to-r, purple.400, pink.500)"
+                          _hover={{
+                            bgGradient: "linear(to-r, purple.500, pink.600)",
+                            transform: "translateY(-2px)",
+                            boxShadow: "lg"
+                          }}
+                          _active={{
+                            transform: "translateY(0px)"
+                          }}
+                          px={8}
+                          py={6}
+                          fontSize="xl"
+                          onClick={() => setShowQuizListContent(true)}
+                        >
+                          View Available Quizzes
+                        </Button>
+                        <Button
+                          size="lg"
+                          colorScheme="green"
+                          bgGradient="linear(to-r, green.400, teal.500)"
+                          _hover={{
+                            bgGradient: "linear(to-r, green.500, teal.600)",
+                            transform: "translateY(-2px)",
+                            boxShadow: "lg"
+                          }}
+                          _active={{
+                            transform: "translateY(0px)"
+                          }}
+                          px={8}
+                          py={6}
+                          fontSize="xl"
+                          onClick={() => navigate('/assignments')}
+                        >
+                          Submit Assignment
+                        </Button>
+                      </VStack>
                     </MotionButton>
 
                     <motion.div
