@@ -68,11 +68,14 @@ type QuestionFormData = {
 interface Unit {
   id: number;
   title: string;
+  description: string;
+  icon: string;
 }
 interface Topic {
   id: number;
   unit_id: number;
   title: string;
+  description: string;
 }
 interface TopicNote {
   id: number;
