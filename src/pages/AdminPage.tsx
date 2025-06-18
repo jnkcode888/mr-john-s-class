@@ -490,8 +490,7 @@ export default function AdminPage() {
         submission.student_name.toLowerCase().includes(searchLower) ||
         submission.admission_number.toLowerCase().includes(searchLower);
       
-      const matchesAssignment = selectedAssignmentFilter === null || 
-        submission.assignment_id === selectedAssignmentFilter;
+      const matchesAssignment = selectedAssignmentFilter === null || Number(submission.assignment_id) === Number(selectedAssignmentFilter);
 
       return matchesSearch && matchesAssignment;
     });
@@ -500,7 +499,7 @@ export default function AdminPage() {
   const handleViewSubmissions = (assignment: Assignment) => {
     setViewingAssignment(assignment);
     setAssignmentSubmissionsForModal(
-      assignmentSubmissions.filter(sub => sub.assignment_id === assignment.id)
+      assignmentSubmissions.filter(sub => Number(sub.assignment_id) === Number(assignment.id))
     );
     onSubmissionsModalOpen();
   };

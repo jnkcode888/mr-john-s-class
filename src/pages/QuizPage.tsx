@@ -21,6 +21,7 @@ import {
   SimpleGrid,
   Badge,
   Divider,
+  Card as ChakraCard,
 } from '@chakra-ui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
@@ -28,6 +29,7 @@ import type { Quiz, Question, Submission } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
 const MotionButton = motion(Button);
+const MotionCard = motion(ChakraCard);
 
 export default function QuizPage() {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
