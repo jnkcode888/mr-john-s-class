@@ -8,16 +8,13 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    target: 'es2015',
+    minify: 'terser',
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          chakra: ['@chakra-ui/react', '@emotion/react', '@emotion/styled', 'framer-motion'],
-          supabase: ['@supabase/supabase-js'],
-        },
-      },
-    },
-    target: 'esnext',
+        format: 'es'
+      }
+    }
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', '@chakra-ui/react', '@emotion/react', '@emotion/styled', 'framer-motion', '@supabase/supabase-js'],
