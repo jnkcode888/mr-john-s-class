@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { createClient } from '@supabase/supabase-js'
 
 console.log('SUPABASE URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
@@ -18,14 +17,7 @@ export type AINews = {
   date: string
   category?: string
   score: number
-} 
-=======
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+}
 
 // Types for our database tables
 export type Quiz = {
@@ -66,7 +58,6 @@ export type AssignmentSubmission = {
   admission_number: string;
   document_url: string;
   created_at: string;
-<<<<<<< HEAD
 };
 
 export type UnitNote = {
@@ -77,8 +68,4 @@ export type UnitNote = {
   file_url?: string;
   created_at: string;
   updated_at: string;
-}; 
-=======
-}; 
->>>>>>> c9ca1037197d8a1326b6d955efc446e7daa61831
->>>>>>> 7b604636c6d13cc306161fdf158c649cf2097a2c
+};
