@@ -886,9 +886,9 @@ export default function QuizPage() {
                     stiffness: 80
                   }}
                 >
-                  <Card 
-                    bg="gray.50" 
-                    borderRadius="xl" 
+                  <MotionCard
+                    bg="gray.50"
+                    borderRadius="xl"
                     overflow="hidden"
                     whileHover={{ scale: 1.01 }}
                     transition={{ duration: 0.2, ease: 'easeOut' } as any}
@@ -933,7 +933,7 @@ export default function QuizPage() {
                                 transition: { duration: 0.2 }
                               }}
                             >
-                              <Card 
+                              <MotionCard
                                 bg={index === 0 ? 'yellow.50' : index === 1 ? 'gray.100' : 'orange.50'}
                                 borderWidth={1}
                                 borderColor={index === 0 ? 'yellow.400' : index === 1 ? 'gray.300' : 'orange.300'}
@@ -970,13 +970,13 @@ export default function QuizPage() {
                                     </Text>
                                   </VStack>
                                 </CardBody>
-                              </Card>
+                              </MotionCard>
                             </motion.div>
                           ))}
                         </SimpleGrid>
                       </VStack>
                     </CardBody>
-                  </Card>
+                  </MotionCard>
                 </motion.div>
 
                 <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
@@ -1006,7 +1006,7 @@ export default function QuizPage() {
                         whileHover={{ scale: 1.01 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <Card
+                        <MotionCard
                           cursor="pointer"
                           onClick={() => handleQuizSelect(quiz)}
                           _hover={{ shadow: 'xl' }}
@@ -1092,7 +1092,7 @@ export default function QuizPage() {
                               </MotionButton>
                             </VStack>
                           </CardBody>
-                        </Card>
+                        </MotionCard>
                       </motion.div>
                     </motion.div>
                   ))}
@@ -1230,7 +1230,7 @@ export default function QuizPage() {
                 transition={{ duration: 0.3 }}
                 style={{ width: '100%' }}
               >
-                <Card
+                <MotionCard
                   boxShadow="2xl"
                   borderRadius="2xl"
                   w="100%"
@@ -1271,7 +1271,7 @@ export default function QuizPage() {
                       )}
                     </VStack>
                   </CardBody>
-                </Card>
+                </MotionCard>
               </motion.div>
             )}
           </AnimatePresence>

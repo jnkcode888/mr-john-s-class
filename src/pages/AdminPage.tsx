@@ -602,6 +602,21 @@ export default function AdminPage() {
     setSelectedTab(index);
   };
 
+  const handleAssignmentSelect = (assignmentId: number) => {
+    setSelectedAssignment(assignmentId);
+    fetchQuestions(assignmentId);
+  };
+
+  const handleQuestionSelect = (questionId: number) => {
+    setSelectedQuestionId(questionId);
+    fetchAnswers(questionId);
+  };
+
+  const handleAnswerSelect = (answerId: number) => {
+    setSelectedAnswerId(answerId);
+    fetchSubmissions(answerId);
+  };
+
   return (
     <Container maxW="container.xl" py={8}>
       <VStack spacing={8} align="stretch">
