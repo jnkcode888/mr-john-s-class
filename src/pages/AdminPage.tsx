@@ -99,7 +99,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState('');
   const [minScore, setMinScore] = useState('');
   const [maxScore, setMaxScore] = useState('');
-  const [selectedAssignmentFilter, setSelectedAssignmentFilter] = useState<string>('');
+  const [selectedAssignmentFilter, setSelectedAssignmentFilter] = useState<number | null>(null);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [questionForm, setQuestionForm] = useState<QuestionFormData>({
@@ -136,7 +136,7 @@ export default function AdminPage() {
   // Add state for units and topics management
   const [unitForm, setUnitForm] = useState({ title: '', description: '', icon: '' });
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
-  const [topicForm, setTopicForm] = useState({ unit_id: '', title: '', description: '' });
+  const [topicForm, setTopicForm] = useState({ unit_id: 0, title: '', description: '' });
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
 
   useEffect(() => {
@@ -490,7 +490,7 @@ export default function AdminPage() {
         submission.student_name.toLowerCase().includes(searchLower) ||
         submission.admission_number.toLowerCase().includes(searchLower);
       
-      const matchesAssignment = !selectedAssignmentFilter || 
+      const matchesAssignment = selectedAssignmentFilter === null || 
         submission.assignment_id === selectedAssignmentFilter;
 
       return matchesSearch && matchesAssignment;
@@ -547,7 +547,7 @@ export default function AdminPage() {
     const { data, error } = await supabase.from('topics').insert([{ ...topicForm, unit_id: Number(topicForm.unit_id) }]).select();
     if (!error && data) {
       setTopics([data[0], ...topics]);
-      setTopicForm({ unit_id: '', title: '', description: '' });
+      setTopicForm({ unit_id: 0, title: '', description: '' });
     }
   };
   const handleEditTopic = (topic: Topic) => setEditingTopic(topic);
@@ -599,6 +599,10 @@ export default function AdminPage() {
     fetchAssignments(topicId);
   };
 
+  const handleTabChange = (index: number) => {
+    setSelectedTab(index);
+  };
+
   return (
     <Container maxW="container.xl" py={8}>
       <VStack spacing={8} align="stretch">
@@ -622,7 +626,7 @@ export default function AdminPage() {
         </Flex>
 
         <Tabs 
-          onChange={(index) => setSelectedTab(index)}
+          onChange={handleTabChange}
           variant="enclosed"
           colorScheme="blue"
           size="lg"
@@ -651,7 +655,7 @@ export default function AdminPage() {
                     <Card key={unit.id}>
                       <CardBody>
                         <VStack align="stretch" spacing={2}>
-                          {editingUnit?.id === unit.id ? (
+                          {Number(editingUnit?.id) === Number(unit.id) ? (
                             <>
                               <Input value={editingUnit.title} onChange={e => setEditingUnit({ ...editingUnit, title: e.target.value })} />
                               <Input value={editingUnit.description} onChange={e => setEditingUnit({ ...editingUnit, description: e.target.value })} />
@@ -682,7 +686,7 @@ export default function AdminPage() {
               <VStack align="stretch" spacing={4}>
                 <Heading size="md">Manage Topics</Heading>
                 <HStack>
-                  <Select placeholder="Select Unit" value={topicForm.unit_id} onChange={e => setTopicForm({ ...topicForm, unit_id: e.target.value })}>
+                  <Select placeholder="Select Unit" value={topicForm.unit_id} onChange={e => setTopicForm({ ...topicForm, unit_id: Number(e.target.value) })}>
                     {units.map(unit => <option key={unit.id} value={unit.id}>{unit.title}</option>)}
                   </Select>
                   <Input placeholder="Title" value={topicForm.title} onChange={e => setTopicForm({ ...topicForm, title: e.target.value })} />
@@ -694,7 +698,7 @@ export default function AdminPage() {
                     <Card key={topic.id}>
                       <CardBody>
                         <VStack align="stretch" spacing={2}>
-                          {editingTopic?.id === topic.id ? (
+                          {Number(editingTopic?.id) === Number(topic.id) ? (
                             <>
                               <Select value={editingTopic.unit_id} onChange={e => setEditingTopic({ ...editingTopic, unit_id: Number(e.target.value) })}>
                                 {units.map(unit => <option key={unit.id} value={unit.id}>{unit.title}</option>)}

@@ -131,7 +131,7 @@ INSERT INTO questions (quiz_id, question_text, choices, correct_choice) VALUES
 -- Create indexes for better query performance
 CREATE INDEX idx_questions_quiz_id ON questions(quiz_id);
 CREATE INDEX idx_submissions_quiz_id ON submissions(quiz_id);
-CREATE INDEX idx_submissions_submitted_at ON submissions(submitted_at);
+CREATE INDEX idx_submissions_submitted_at ON submissions(submitted_at); 
 CREATE INDEX idx_unit_notes_unit_id ON unit_notes(unit_id);
 
 -- Insert sample unit notes
