@@ -12,7 +12,12 @@ export default defineConfig({
     minify: true,
     rollupOptions: {
       output: {
-        format: 'es'
+        format: 'es',
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          chakra: ['@chakra-ui/react', '@emotion/react', '@emotion/styled', 'framer-motion'],
+          supabase: ['@supabase/supabase-js']
+        }
       }
     }
   },
