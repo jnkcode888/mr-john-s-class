@@ -1,3 +1,25 @@
+<<<<<<< HEAD
+import { createClient } from '@supabase/supabase-js'
+
+console.log('SUPABASE URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+console.log('SUPABASE ANON KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+export type AINews = {
+  id: string
+  platform: 'Reddit' | 'X'
+  title: string
+  content: string
+  url: string
+  date: string
+  category?: string
+  score: number
+} 
+=======
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -44,6 +66,7 @@ export type AssignmentSubmission = {
   admission_number: string;
   document_url: string;
   created_at: string;
+<<<<<<< HEAD
 };
 
 export type UnitNote = {
@@ -55,3 +78,7 @@ export type UnitNote = {
   created_at: string;
   updated_at: string;
 }; 
+=======
+}; 
+>>>>>>> c9ca1037197d8a1326b6d955efc446e7daa61831
+>>>>>>> 7b604636c6d13cc306161fdf158c649cf2097a2c

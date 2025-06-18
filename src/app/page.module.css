@@ -1,0 +1,239 @@
+.main {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background: linear-gradient(120deg, #f4f8fb 0%, #e0e7ff 100%);
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(90deg, #e0e7ff 0%, #f4f8fb 100%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  border-radius: 0 0 16px 16px;
+  margin-bottom: 2rem;
+  animation: fadeInDown 0.6s;
+}
+
+.logo {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #3b4252;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.weeklyLink {
+  color: #6366f1;
+  font-weight: 500;
+  text-decoration: none;
+  background: #e0e7ff;
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
+  box-shadow: 0 1px 4px rgba(99,102,241,0.08);
+  font-size: 1.1rem;
+}
+
+.weeklyLink:hover {
+  background: #6366f1;
+  color: #fff;
+}
+
+.sectionCard {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.07);
+  padding: 2rem 1.5rem;
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.7s;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #6366f1;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  letter-spacing: 1px;
+  animation: fadeInDown 0.7s;
+}
+
+.tabs {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin: 2rem 0 1rem 0;
+  animation: fadeInUp 0.7s;
+}
+
+.tab {
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background: #e0e7ff;
+  color: #6366f1;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.1s;
+  box-shadow: 0 1px 4px rgba(99,102,241,0.08);
+}
+
+.tab:hover, .tab.active {
+  background: #6366f1;
+  color: #fff;
+  transform: translateY(-2px) scale(1.04);
+}
+
+.topStoriesCard {
+  background: #f4f8fb;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+  padding: 1.5rem 1rem;
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.7s;
+}
+
+.topStoriesTitle {
+  font-size: 1.3rem;
+  color: #6366f1;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.newsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.select,
+.search {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.select {
+  min-width: 150px;
+}
+
+.search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.refresh {
+  padding: 0.5rem 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s ease;
+}
+
+.refresh:hover {
+  background: #0051a2;
+}
+
+.refresh:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.content {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.error {
+  background: #ffebee;
+  color: #c62828;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.loading,
+.empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-size: 1.2rem;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+  .header {
+    padding: 0.7rem 1rem;
+    font-size: 1.1rem;
+  }
+  .main {
+    padding: 1rem;
+  }
+  .sectionCard, .topStoriesCard {
+    padding: 1.2rem 0.5rem;
+  }
+  .title {
+    font-size: 1.5rem;
+  }
+  .tabs {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .tab {
+    width: 100%;
+    font-size: 1rem;
+  }
+}
+
+.newsCard {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.newsCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+} 
