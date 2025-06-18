@@ -589,6 +589,16 @@ export default function AdminPage() {
     }
   };
 
+  const handleUnitSelect = (unitId: number) => {
+    setSelectedUnitId(unitId);
+    fetchTopics(unitId);
+  };
+
+  const handleTopicSelect = (topicId: number) => {
+    setSelectedTopicId(topicId);
+    fetchAssignments(topicId);
+  };
+
   return (
     <Container maxW="container.xl" py={8}>
       <VStack spacing={8} align="stretch">
