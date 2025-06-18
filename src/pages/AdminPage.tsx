@@ -277,11 +277,11 @@ export default function AdminPage() {
   };
 
   const fetchUnits = async () => {
-    const { data, error } = await supabase.from('units').select('id, title').order('id');
+    const { data, error } = await supabase.from('units').select('id, title, description, icon').order('id');
     if (!error) setUnits(data || []);
   };
   const fetchTopics = async (unitId: number) => {
-    const { data, error } = await supabase.from('topics').select('id, unit_id, title').eq('unit_id', unitId).order('id');
+    const { data, error } = await supabase.from('topics').select('id, unit_id, title, description').eq('unit_id', unitId).order('id');
     if (!error) setTopics(data || []);
   };
   const fetchTopicNotes = async () => {
@@ -562,6 +562,31 @@ export default function AdminPage() {
   const handleDeleteTopic = async (id: number) => {
     const { error } = await supabase.from('topics').delete().eq('id', id);
     if (!error) setTopics(topics.filter(t => t.id !== id));
+  };
+
+  const handleDeleteAssignment = async (id: number) => {
+    try {
+      const { error } = await supabase
+        .from('assignments')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setAssignments(prev => prev.filter(a => a.id !== id));
+      toast({
+        title: 'Assignment deleted successfully',
+        status: 'success',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: 'Error deleting assignment',
+        status: 'error',
+        duration: 5000,
+      });
+    }
   };
 
   return (

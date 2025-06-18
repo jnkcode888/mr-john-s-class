@@ -889,7 +889,7 @@ export default function QuizPage() {
                     borderRadius="xl" 
                     overflow="hidden"
                     whileHover={{ scale: 1.01 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.2, type: 'spring' }}
                   >
                     <CardBody>
                       <VStack spacing={4}>
