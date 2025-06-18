@@ -672,12 +672,7 @@ export default function QuizPage() {
           <motion.div
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ 
-              duration: 0.8,
-              type: "spring",
-              stiffness: 100,
-              damping: 10
-            }}
+            transition={{ duration: 0.3 }}
           >
             <Heading 
               textAlign="center" 
@@ -891,7 +886,6 @@ export default function QuizPage() {
                     borderRadius="xl"
                     overflow="hidden"
                     whileHover={{ scale: 1.01 }}
-                    transition={{ duration: 0.2, ease: 'easeOut' } as any}
                   >
                     <CardBody>
                       <VStack spacing={4}>
@@ -937,7 +931,6 @@ export default function QuizPage() {
                                 bg={index === 0 ? 'yellow.50' : index === 1 ? 'gray.100' : 'orange.50'}
                                 borderWidth={1}
                                 borderColor={index === 0 ? 'yellow.400' : index === 1 ? 'gray.300' : 'orange.300'}
-                                boxShadow="lg"
                               >
                                 <CardBody>
                                   <VStack spacing={2}>
@@ -1004,13 +997,11 @@ export default function QuizPage() {
                     >
                       <motion.div
                         whileHover={{ scale: 1.01 }}
-                        transition={{ duration: 0.2 }}
                       >
                         <MotionCard
                           cursor="pointer"
                           onClick={() => handleQuizSelect(quiz)}
                           _hover={{ shadow: 'xl' }}
-                          transition="all 0.3s"
                           bg="white"
                           borderRadius="xl"
                           overflow="hidden"
@@ -1079,9 +1070,8 @@ export default function QuizPage() {
                                   mt={2}
                                   _hover={{
                                     transform: 'translateY(-2px)',
-                                    shadow: 'md'
+                                    shadow: 'md',
                                   }}
-                                  transition="all 0.2s"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleQuizSelect(quiz);

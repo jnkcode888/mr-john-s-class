@@ -139,18 +139,23 @@ export default function AdminPage() {
   const [topicForm, setTopicForm] = useState({ unit_id: 0, title: '', description: '' });
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
 
+  // Add missing state declarations
+  const [selectedQuestionId, setSelectedQuestionId] = useState<number | null>(null);
+  const [selectedAnswerId, setSelectedAnswerId] = useState<number | null>(null);
+
+  const [answers, setAnswers] = useState<any[]>([]);
+
   useEffect(() => {
     fetchQuizzes();
     fetchAssignmentSubmissions();
-    fetchAssignments();
     fetchUnits();
     fetchTopicNotes();
   }, []);
 
   useEffect(() => {
     if (selectedQuiz) {
-      fetchQuestions(selectedQuiz.id);
-      fetchSubmissions(selectedQuiz.id);
+      fetchQuestions(Number(selectedQuiz.id));
+      fetchSubmissions(Number(selectedQuiz.id));
     }
   }, [selectedQuiz]);
 
@@ -182,45 +187,31 @@ export default function AdminPage() {
     }
   };
 
-  const fetchQuestions = async (quizId: string) => {
+  const fetchQuestions = async (assignmentId: number) => {
     try {
       const { data, error } = await supabase
         .from('questions')
         .select('*')
-        .eq('quiz_id', quizId)
-        .order('created_at');
+        .eq('assignment_id', assignmentId);
 
       if (error) throw error;
-      setQuestions(data);
+      setQuestions(data || []);
     } catch (error) {
-      console.error(error);
-      toast({
-        title: 'Error loading questions',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      console.error('Error fetching questions:', error);
     }
   };
 
-  const fetchSubmissions = async (quizId: string) => {
+  const fetchSubmissions = async (answerId: number) => {
     try {
       const { data, error } = await supabase
         .from('submissions')
         .select('*')
-        .eq('quiz_id', quizId)
-        .order('submitted_at', { ascending: false });
+        .eq('answer_id', answerId);
 
       if (error) throw error;
       setSubmissions(data || []);
     } catch (error) {
-      console.error(error);
-      toast({
-        title: 'Error loading submissions',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
+      console.error('Error fetching submissions:', error);
     }
   };
 
@@ -255,26 +246,6 @@ export default function AdminPage() {
   useEffect(() => {
     console.log('Current assignment submissions:', assignmentSubmissions);
   }, [assignmentSubmissions]);
-
-  const fetchAssignments = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('assignments')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setAssignments(data || []);
-    } catch (error) {
-      console.error('Error loading assignments:', error);
-      toast({
-        title: 'Error loading assignments',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  };
 
   const fetchUnits = async () => {
     const { data, error } = await supabase.from('units').select('id, title, description, icon').order('id');
@@ -572,7 +543,7 @@ export default function AdminPage() {
 
       if (error) throw error;
 
-      setAssignments(prev => prev.filter(a => a.id !== id));
+      setAssignments(prev => prev.filter(a => Number(a.id) !== Number(id)));
       toast({
         title: 'Assignment deleted successfully',
         status: 'success',
@@ -595,7 +566,7 @@ export default function AdminPage() {
 
   const handleTopicSelect = (topicId: number) => {
     setSelectedTopicId(topicId);
-    fetchAssignments(topicId);
+    // fetchAssignments(topicId);
   };
 
   const handleTabChange = (index: number) => {
@@ -603,8 +574,11 @@ export default function AdminPage() {
   };
 
   const handleAssignmentSelect = (assignmentId: number) => {
-    setSelectedAssignment(assignmentId);
-    fetchQuestions(assignmentId);
+    const assignment = assignments.find(a => Number(a.id) === Number(assignmentId));
+    if (assignment) {
+      setSelectedAssignment(assignment);
+      fetchQuestions(assignmentId);
+    }
   };
 
   const handleQuestionSelect = (questionId: number) => {
@@ -615,6 +589,21 @@ export default function AdminPage() {
   const handleAnswerSelect = (answerId: number) => {
     setSelectedAnswerId(answerId);
     fetchSubmissions(answerId);
+  };
+
+  // Add fetchAnswers function
+  const fetchAnswers = async (questionId: number) => {
+    try {
+      const { data, error } = await supabase
+        .from('answers')
+        .select('*')
+        .eq('question_id', questionId);
+
+      if (error) throw error;
+      setAnswers(data || []);
+    } catch (error) {
+      console.error('Error fetching answers:', error);
+    }
   };
 
   return (
@@ -928,7 +917,7 @@ export default function AdminPage() {
                                 icon={<DeleteIcon />}
                               size="sm"
                                 colorScheme="red"
-                                onClick={() => handleDeleteAssignment(assignment.id)}
+                                onClick={() => handleDeleteAssignment(Number(assignment.id))}
                               />
                             </HStack>
                           </HStack>

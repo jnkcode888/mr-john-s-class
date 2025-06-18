@@ -149,7 +149,7 @@ export default function AssignmentPage() {
         <motion.div
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut' } as any}
+          transition={{ duration: 0.2 }}
         >
           <Heading
             textAlign="center"
@@ -183,7 +183,6 @@ export default function AssignmentPage() {
                 cursor="pointer"
                 onClick={() => handleAssignmentSelect(assignment)}
                 _hover={{ shadow: 'xl' }}
-                transition="all 0.3s"
                 bg="white"
                 borderRadius="xl"
                 overflow="hidden"
@@ -219,7 +218,6 @@ export default function AssignmentPage() {
                         transform: 'translateY(-2px)',
                         shadow: 'md',
                       }}
-                      transition="all 0.2s"
                     >
                       View Assignment
                     </MotionButton>
