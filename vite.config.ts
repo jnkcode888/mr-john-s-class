@@ -9,7 +9,7 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
     target: 'es2015',
-    minify: 'terser',
+    minify: true,
     rollupOptions: {
       output: {
         format: 'es'
